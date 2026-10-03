@@ -798,3 +798,839 @@ Office 2, Risebridge Farm, Peasley Lane, Cranbrook, England, TN17 1HP
 © 2026 velixir Ltd. All rights reserved.
 Built in the UK · GDPR-compliant
 
+
+/
+Claude finished the response
+I have a new project in simple asp dotnet blazor server. 
+This one has to be very pared down. 
+It runs on the free tier of a service called v elixir. 
+
+I have the dump.txt in the project files. 
+Some ground rules: 
+absolutely no third party dependencies 
+Microsoft first party dependencies ok 
+no css or javascript frameworks 
+we write our own css and js 
+preferably scoped within the same component 
+
+be very mindful of performance as this needs to run on the free tier. 
+
+that being said, I may have gotten a little to happy with the delete button 
+and deleted a bit too much 
+can you please write everything that is absolutely essential for the site to function? 
+
+remember no third party css js or any third party dependencies
+
+NEVER EVER EVER write code comments. 
+in fact, never, ever write comments at all. 
+markdown files such as readme.md are the exception but even these should be as concise and terse as possible.
+also please update documentation to match the code
+Delivery
+Whole project as one tar.gz, unambiguous file placement
+Any files to delete on updates called out explicitly
+No bespoke sed/patch scripts — full files only for anything that changes
+Docs updated alongside code changes
+Low verbosity, no code comments
+
+velixir.net - Free .NET web hosting, no card required, forever.Promotion (self.dotnet)
+
+submitted 7 hours ago by VelixirNET
+
+Hey, founder of velixir.net
+
+Just a quick post to bring some awareness to our newer offering of completely free .NET web hosting (along with 10 other languages), we've been around for 8 months now and want to give back to the communities that we're also apart of.
+
+0.25 vCPU, 256MB RAM, 1GB Disk - free for forever. We scale it down to zero when no requests are hitting it, and it'll scale back up as another request is in-flight for it.
+
+I'd love some feedback on the offering and platform, and I'll stick around to answer any questions. Thank you.
+
+    14 commentssharesavehidereportcrosspost
+
+all 14 comments
+sorted by: best
+formatting help
+content policy
+save
+
+[–]
+dark_bits 9 points 5 hours ago 
+
+~€18/month on a basic posgres instance is not that bad tbh. Like for an app with low traffic it's something I'd gladly consider.
+
+I will surely keep you guys in mind in the future, good luck with sales
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] 4 points 5 hours ago 
+
+Thank you, much appreciated.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+[–]
+highwingers 2 points 6 hours ago 
+
+How much bandwidth?
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] 3 points 6 hours ago* 
+
+Unmetered bandwidth across all plans, with a soft fair usage policy of 10 TB per replica per month. Plenty of headroom for the large majority of web apps, and we're happy to scale the fair usage policy higher on a case by case basis.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+[–]
+Infinite_Track_9210 2 points 4 hours ago 
+
+Hi. Internet. How would it work with a wasm app? I have a website built in Open Silver, that compiles into wasm website and it uses Parse SDK to communicate to our server.
+
+Do you reckon I can host the wasm website there?
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] 6 points 4 hours ago 
+
+Hey! Yeah that should work fine. OpenSilver compiles to Blazor WebAssembly, so if it's a standalone WASM project you'll just want a small .NET Core host project to serve it (the standard Blazor "hosted" setup), and then it deploys like any other .NET app.
+
+Parse can be hosted on velixir too since it's Node.js, and we natively support it as well.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+[–]
+TruePadawan [score hidden] an hour ago 
+
+Can I use this for a SignalR server?
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] [score hidden] an hour ago 
+
+Yep, WebSockets work out of the box, and the SSE and long-polling fallbacks work too.
+
+If you scale out later, our managed Valkey can work as the Redis backplane.
+
+The free plan works fine too. The only catch is that it sleeps after a while with no traffic, so the first connection after a quiet spell takes a few seconds while it wakes up. Whether that matters depends on your use case. If it does, a paid plan (from €3.49/month) keeps it always on.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+[–]
+IChaseGolfBalls 1 point 2 hours ago 
+
+I'm looking for somewhere to host a hobby site that might catch maybe 100 views a month (located in Canada), so this might be real helpful.
+
+Does this hosting include persistent storage? I'm using a SQLite database in the site, and it would need to survive the host spinning down or restarting.
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] 2 points 2 hours ago 
+
+Unfortunately our web apps currently do not support persistent volumes (potentially in the future if the demand is there), so you'd need to have an external data store.
+
+Thanks for checking us out.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+[–]
+IChaseGolfBalls [score hidden] 48 minutes ago 
+
+Thanks for the answer! Best of luck!
+
+    permalinkembedsaveparentreportreply
+
+[–]
+spicyeyeballs 0 points 6 hours ago 
+
+How does this compare to the free hosting on azure?
+
+    permalinkembedsavereportreply
+
+[–]
+VelixirNET[S] 7 points 5 hours ago 
+
+Good question! Azure's F1 free tier is decent, but it caps you at 60 CPU minutes a day, and once you hit that your app stops until the next day. It also doesn't let you use a custom domain, and you need a card to open an Azure account. Our free app has no daily cap, it sleeps when nobody's using it and wakes on the next request (the first hit takes a few seconds). You get a custom domain with HTTPS, no card, and you can push pretty much any language without a Dockerfile, all on EU servers. To be fair, Azure gives you more RAM (1 GB vs our 256 MB) and lets you run more than one free app, so if you're running something hefty it might suit you better. For a small API, bot or side project though, we're the less fiddly option imo.
+
+Joe
+
+  permalinkembedsaveparentreportreply
+
+velixir
+Product
+
+Templates
+Pricing
+Docs
+Blog
+Sign in
+Start free
+New: a genuinely free tier. Deploy a scale-to-zero app that sleeps when idle and wakes on the next request.
+Start free
+×
+the launchpad for developers AI agents builders founders developers
+Web app hosting in any language.
+
+Push your source and we build it, autoscale it, and keep it live with high availability on a European-built cloud. Reserved CPU and memory on every plan, and no server for you to manage.
+Deploy your first app
+View Docs
+Save up to 70% vs Azure, Heroku, Render
+Deploy free, no card
+First month on us, up to €14.99
+Deploy in under 2 min
+velixir deploy
+live
+Pushed Node.js source
+velixir deploy · 214 files · no Dockerfile
+Building your source 100%
+▸ detecting runtime & dependencies
+▸ compiling & packaging OCI image
+✓ image pushed to registry
+myapp.velixir.run Live
+Replicas · autoscaling
+2
+scaling to demand
+Region · HA
+EU Central
+failover · warm standby
+Live traffic 0.0K req/s · p99 23ms
+deployed in 1m 41s · zero downtime
+Deploy Your Way
+CLI. CI. Or your AI agent.
+
+Four ways in, one pipeline behind them. Whichever you pick, velixir builds your source into a container image and rolls it out in seconds. No Dockerfile, no YAML.
+
+However you deploy
+
+AI agent New
+
+Your agent deploys the app it just built and hands the person a link to keep it. No account needed.
+npx -y @velixir/mcp
+
+velixir CLI
+
+One command from your terminal. Nothing to set up first, which makes it the fastest way to try us.
+velixir deploy
+
+GitHub Actions
+
+Add one workflow file and every push to your deploy branch ships a release. All it needs is an API key, with no App to install on your repo.
+.github/workflows/velixir.yml
+
+Any other CI
+
+Azure DevOps, GitLab, Jenkins, whatever you already run. The CLI is the deploy step.
+- run: velixir deploy
+
+All four run the same pipeline
+terminal
+$ velixir deploy
+▸ Packaging source (1.1s)
+▸ Building image (Node 22)
+▸ Pushing image (myapp-api:v1 → registry)
+▸ Deploying to eu-central (primary · 3 replicas)
+▸ Autoscaling configured (min: 2, max: 10)
+▸ Edge routes published (TLS provisioned, custom domains live)
+✓ Live at myapp-api.velixir.run (4.2s)
+Platform Features
+Everything your app needs. Nothing it doesn't.
+
+Every request reaches you through velixir's own edge nodes in the EU. Everything behind them, from the build to the bandwidth, is ours to run.
+
+In front of your app
+
+A visitor
+
+or a bot, or a scanner
+
+TLS
+
+Certificates issued and renewed for you, custom domains included.
+
+Rate limiting
+
+Per-IP request and connection caps, set per app, live with no redeploy. Over the limit gets a 429 here.
+
+Managed WAF
+
+The OWASP Core Rule Set. Watch in detect mode first, then switch to blocking.
+
+Under-attack check
+
+Every browser solves a proof of work. Seconds for a person, ruinous for a botnet.
+
+Your app
+
+Plain HTTP on the port we hand you. Nothing to install, nothing to configure.
+
+Dashed stages are yours to switch on, per app, whenever you need them.
+
+Behind your app
+
+Immutable releases
+
+Your source becomes a container image once, so scaling out is a pull and start, never a rebuild. Preview in staging, then roll back to any earlier image in seconds.
+
+Autoscaling
+
+Min and max instances per app, scaled on CPU with defaults that already work. Up on demand, back down when the demand goes.
+
+Managed compute
+
+Capacity, patching and node-level failover are ours, on velixir-run hardware in the EU.
+
+Unmetered bandwidth
+
+No egress fees and no per-GB meter, so a busy launch day never lands as a surprise on the bill. A soft fair-use guideline keeps one app from crowding out the rest.
+Any Language
+Any language.
+Built and run for you.
+
+velixir isn't tied to one framework. Push your source and we build it into a container image, then run it with autoscaling and high availability. Node.js, Python, Go, Ruby, PHP, Java, Elixir, Rust, Deno, F#, and .NET are all first-class.
+
+    Automatic builds from source, no Dockerfile
+    Node.js, Python, Go, Ruby, PHP, Java, Elixir, Rust, Deno, F#, and .NET (Core 1.0 through .NET 10)
+    Consistent, reproducible builds across deploys
+    Lift-and-shift an existing app or start greenfield in any supported runtime
+    Immutable image deploys, no rebuilds on scale-out
+
+velixir build output
+[1/4] detect language and runtime
+      Node 22 detected (package.json)
+[2/4] install dependencies
+      384 packages in 6.1s
+[3/4] velixir build myapp-api:v1
+      Image built (78.2 MB)
+[4/4] push → container registry
+      Ready for instant scale-out
+✓ Build complete. Ready to deploy.
+Debug with AI
+Your deploy failed.
+Here's why, in English.
+
+The worst part of a first deploy going wrong is not the error. It's not knowing which line of four hundred is the one that matters. Press Explain this on your logs and you get the cause in a sentence, the fix as steps, and the exact lines it read.
+
+    It knows how velixir runs your app, so it catches the port and binding mistakes a generic assistant guesses at.
+    It quotes the log lines behind every answer, so you can check the reasoning instead of trusting it.
+    Runs on a European model, only when you press the button, and never sees your environment variable values.
+
+How it works
+Runtime Logs Live
+Explain this
+
+Your app is listening on 127.0.0.1, so nothing outside it can get in.
+Confident
+
+    Bind to 0.0.0.0 instead of localhost.
+    Read the port from the PORT environment variable rather than hardcoding 3000.
+
+Log lines this is based on
+10:42:01 Server started
+10:42:01 listening on 127.0.0.1:3000
+10:42:14 health check failed: connection refused
+10:42:29 CrashLoopBackOff
+High Availability
+A node goes dark. Your app doesn't.
+
+Turn HA on and we keep warm standby replicas on separate worker nodes. Watch what happens when the primary stops answering.
+Primary probe fails
+Primary cluster stops responding.
+
+The edge tries the primary pool with a 500 ms connect budget. Two backends fail in a row - the per-hostname circuit-breaker trips for 3 minutes.
+
+Pick the standby's plan and replica count separately from production, so insurance does not cost the same as the thing it insures.
+European sovereignty, by default
+One region.
+In Europe. On purpose.
+
+Every app, database, and cache runs in EU Central. Your data stays under European jurisdiction and never leaves the EU. It is not a setting you switch on, it is the only place we run.
+Data stays in the EU
+EU jurisdiction
+No egress fees
+EU Central
+European Union
+Climate
+Carbon negative by design
+
+Our primary regions run on 100% renewable energy. The residual emissions we can't avoid? We offset them twice over with verified carbon removal credits, purchased daily, every kilogram on the public registry.
+1.5t
+CO2e removed via verified offsets
+since Jun 2026
+2.1×
+our measured emissions
+offset every single day
+100%
+renewable energy
+in our primary regions
+How we calculate it
+
+Pricing
+Start free. Pay for what runs.
+
+Your first app sleeps when idle and wakes on the next request, so keeping it live costs nothing. No card to deploy. When you outgrow free, your first month is on us: €14.99 of credit when you add a payment method.
+
+Web apps
+
+Free
+
+then €3.49/mo · scale to zero included
+
+Managed Postgres
+
+€4.95/mo
+
+point-in-time recovery at every tier
+
+Managed Valkey
+
+€2.45/mo
+
+Redis-compatible, fully managed
+See all plans
+Compare with Heroku, Render, Azure
+
+Hourly billing across all three products · trial credit deducted first · no lock-in.
+Push your code.
+velixir handles the rest.
+
+Free to start, no card. Just your source, live in about two minutes.
+Deploy your first app
+Talk to Us
+
+€14.99 credit on payment-method add - covers a full month of Starter + Postgres Starter + Valkey Starter · No charge until spent or 30 days · velixir.run
+velixir
+
+Web app hosting in any language, on the European cloud.
+EU Central
+Carbon negative
+Product
+
+    Web apps
+    Databases
+    Caches
+    All products
+    Deploy with AI
+    Dedicated web hosting
+    Starter templates
+    Free hosting
+    Pricing
+
+Languages
+
+    Node.js
+    Python
+    Go
+    Java
+    Ruby
+    Rust
+    PHP
+    Elixir
+    .NET
+    Deno
+    F#
+    All languages →
+
+Compare
+
+    vs Azure App Service
+    vs Heroku
+    vs Render
+    vs Fly.io
+    vs DigitalOcean App Platform
+    vs Railway
+    All comparisons →
+
+Resources
+
+    Blog
+    Docs
+    API reference
+    llms.txt
+    Carbon negative
+    Status
+    GitHub
+
+Legal
+
+    Terms of Service
+    Privacy Policy
+    Data Processing
+    Cookie Policy
+    Acceptable Use
+    Contact
+
+VELIXIR LTD
+Company no. 17240244 - registered in England & Wales
+Office 2, Risebridge Farm, Peasley Lane, Cranbrook, England, TN17 1HP
+© 2026 velixir Ltd. All rights reserved.
+Built in the UK · GDPR-compliant
+
+velixir
+Product
+
+Templates
+Pricing
+Docs
+Blog
+Sign in
+Start free
+New: a genuinely free tier. Deploy a scale-to-zero app that sleeps when idle and wakes on the next request.
+Start free
+×
+Pricing
+Three products. Honest prices.
+
+Start free, no card. Your first app sleeps when idle and wakes on the next request, so it costs nothing to keep live. When you outgrow it, your first month on a paid plan is on us: €14.99 of credit when you add a payment method, enough for a Starter app, a Postgres DB, and a Valkey cache for a month.
+Web apps
+Databases
+Caches
+Web app plans
+
+Per replica, per month. Autoscale horizontally on every plan.
+€ EUR
+$ USD
+£ GBP
+Free
+Free sleeps when idle
+0.25
+vCPU
+256 MB
+RAM
+1 GB
+Disk
+
+    Isolated compute
+    Wakes on the next request
+    1 deployment slot per app
+    Custom domains
+
+Start free
+Hobby
+€3.49 /mo per replica
+0.5
+vCPU
+512 MB
+RAM
+5 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    1 deployment slot per app
+    Custom domains
+
+Start trial
+Starter
+€6.95 /mo per replica
+1
+vCPU
+1 GB
+RAM
+10 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    1 deployment slot per app
+    Custom domains
+
+Start trial
+Standard
+€12.95 /mo per replica
+1
+vCPU
+2 GB
+RAM
+20 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    2 deployment slots per app
+    Custom domains
+
+Start trial
+Most Popular
+Pro
+€24.95 /mo per replica
+2
+vCPU
+4 GB
+RAM
+40 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    3 deployment slots per app
+    Custom domains
+
+Start trial
+Business
+€47.95 /mo per replica
+4
+vCPU
+8 GB
+RAM
+80 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    5 deployment slots per app
+    Custom domains
+
+Start trial
+Scale
+€89.95 /mo per replica
+6
+vCPU
+16 GB
+RAM
+120 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    8 deployment slots per app
+    Custom domains
+
+Start trial
+Enterprise
+€179.95 /mo per replica
+8
+vCPU
+32 GB
+RAM
+160 GB
+Disk
+
+    Isolated compute
+    Autoscaling
+    10 deployment slots per app
+    Custom domains
+
+Start trial
+Managed Postgres
+
+Point-in-time recovery and WAL backup included at every tier. HA bills as primary + replica.
+Starter
+€4.95 /mo
+0.25
+vCPU
+512 MB
+RAM
+10 GB
+SSD
+
+    7-day PITR window
+    High availability
+
+Standard
+€17.95 /mo
+1
+vCPU
+2 GB
+RAM
+25 GB
+SSD
+
+    14-day PITR window
+    High availability
+
+Pro
+€64.95 /mo
+2
+vCPU
+8 GB
+RAM
+50 GB
+SSD
+
+    28-day PITR window
+    High availability
+
+Scale
+€169.95 /mo
+4
+vCPU
+16 GB
+RAM
+100 GB
+SSD
+
+    28-day PITR window
+    High availability
+
+Managed Valkey
+
+Wire-compatible with every Redis client - StackExchange.Redis, ServiceStack, redis-cli all work unchanged.
+Starter
+€2.45 /mo
+0.1
+vCPU
+256 MB
+Cache
+
+    RDB + AOF persistence
+    Ephemeral
+    Wire-compatible with Redis clients
+
+Standard
+€8.95 /mo
+0.5
+vCPU
+1 GB
+Cache
+
+    RDB + AOF persistence
+    7-day snapshots
+    Wire-compatible with Redis clients
+
+Pro
+€26.95 /mo
+1
+vCPU
+4 GB
+Cache
+
+    RDB + AOF persistence
+    14-day snapshots
+    Wire-compatible with Redis clients
+
+Scale
+€89.95 /mo
+2
+vCPU
+16 GB
+Cache
+
+    RDB + AOF persistence
+    28-day snapshots
+    Wire-compatible with Redis clients
+
+Hourly billing across all three products · Trial credit deducted first · No lock-in. App HA adds a warm-standby replica with the plan and replica count of your choice - billed independently, so a Business primary can run behind a Standard standby for a fraction of production cost. Database HA doubles the bill (primary + standby) on plans that support it. Need more than 8 vCPU per app, 16 GB on a database, or 16 GB cache? Talk to us about Enterprise →
+How does that compare?
+
+We publish a full breakdown against Azure App Service, Heroku, Render, Fly.io, DigitalOcean and Railway - including the cases where they are the better choice.
+Compare velixir
+velixir
+
+Web app hosting in any language, on the European cloud.
+EU Central
+Carbon negative
+Product
+
+    Web apps
+    Databases
+    Caches
+    All products
+    Deploy with AI
+    Dedicated web hosting
+    Starter templates
+    Free hosting
+    Pricing
+
+Languages
+
+    Node.js
+    Python
+    Go
+    Java
+    Ruby
+    Rust
+    PHP
+    Elixir
+    .NET
+    Deno
+    F#
+    All languages →
+
+Compare
+
+    vs Azure App Service
+    vs Heroku
+    vs Render
+    vs Fly.io
+    vs DigitalOcean App Platform
+    vs Railway
+    All comparisons →
+
+Resources
+
+    Blog
+    Docs
+    API reference
+    llms.txt
+    Carbon negative
+    Status
+    GitHub
+
+Legal
+
+    Terms of Service
+    Privacy Policy
+    Data Processing
+    Cookie Policy
+    Acceptable Use
+    Contact
+
+VELIXIR LTD
+Company no. 17240244 - registered in England & Wales
+Office 2, Risebridge Farm, Peasley Lane, Cranbrook, England, TN17 1HP
+© 2026 velixir Ltd. All rights reserved.
+Built in the UK · GDPR-compliant
+
+Ran 4 commands, searched the web, shared files
+Tracking off-by-one byte discrepancies from trailing newlines.
+Presented file
+Extract it next to your repo folder, since every path in the archive starts with zen-velixir-run/.
+
+Delete: Zen.Blazor/Components/Pages/Home.razor.css
+
+Changed: README.md, Program.cs, Zen.Blazor.csproj, appsettings.json, App.razor, MainLayout.razor, MainLayout.razor.css, Error.razor, NotFound.razor, wwwroot/app.css
+
+New: Components/Pages/Error.razor.css
+
+Unchanged: All other files are byte-identical to the dump. I checked them against its SHA256 hashes.
+
+What was broken:
+
+MainLayout referenced <NavMenu /> and App referenced <ReconnectModal />, but neither component exists. I removed both references. Without a custom modal, blazor.web.js uses its own built-in reconnect UI.
+The #blazor-error-ui styles were gone, so the error bar showed on every page. They're back in the layout's scoped CSS.
+favicon.png was missing, so every page load also hit the 404 pipeline. The favicon is now an inline SVG data URI, so there's no file and no request.
+The leftover Bootstrap classes (text-danger, px-4, top-row) are replaced with our own CSS.
+Changes for velixir and the free tier:
+
+The app binds to PORT on all interfaces when that variable is set.
+It honors X-Forwarded-For and X-Forwarded-Proto from the edge.
+I dropped UseHttpsRedirection, because the edge terminates TLS.
+It uses workstation, non-concurrent GC, invariant globalization and English-only satellite assemblies. This keeps memory low and avoids a crash if the build image has no ICU.
+Production logging is at Warning, except startup messages.
+I couldn't compile this here because there's no .NET SDK in my sandbox. Run dotnet build before you push.
+
+
+Zen velixir run.tar
+GZ 
+
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check cited sources.
+
+
