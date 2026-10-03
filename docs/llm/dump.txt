@@ -1,10 +1,10 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-10-03 23:02:17
+Generated (UTC): 2026-10-03 23:12:26
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      563c2659c73b88776198e6ef6135df77b70534f6
+Git Commit:      f2a229134eddb104234793eb43612b6e8e26dc70
 Git Branch:      main
-Git Dirty:       yes (uncommitted changes are included below)
+Git Dirty:       no
 .NET SDK:        10.0.112
 Files Exported:  47
 ===============================================================================
@@ -649,10 +649,10 @@ MODIFIED: 2026-10-03 22:53:09 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Layout/MainLayout.razor
-SIZE:     0.51 KB (524 bytes)
+SIZE:     0.51 KB (523 bytes)
 LINES:    23
-SHA256:   d86c863bf9698cbbc6b5bc144d9ce025bf31cffc2c7320b8f6aa3d3d74678e51
-MODIFIED: 2026-10-03 22:53:09 (UTC)
+SHA256:   3a93d2990bd201ae3813b324d59a1fa4ed067b59937ce88876c019617ea3dd95
+MODIFIED: 2026-10-03 23:12:01 (UTC)
 ================================================================================
 
 ﻿@inherits LayoutComponentBase
@@ -664,7 +664,7 @@ MODIFIED: 2026-10-03 22:53:09 (UTC)
 
     <main>
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <a href="https://github.com/kusl/zen-velixir-run" target="_blank">About</a>
         </div>
 
         <article class="content px-4">
@@ -685,7 +685,7 @@ FILE:     Zen.Blazor/Components/Layout/MainLayout.razor.css
 SIZE:     1.80 KB (1842 bytes)
 LINES:    98
 SHA256:   212b70f685a4fd2639fbd7a5d1151c4feb1e61f86987635b83affaca12bd45af
-MODIFIED: 2026-10-03 22:53:09 (UTC)
+MODIFIED: 2026-10-03 23:11:38 (UTC)
 ================================================================================
 
 .page {
@@ -61674,9 +61674,9 @@ MODIFIED: 2026-10-03 22:53:27 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-10-03 23:02:18
+EXPORT COMPLETED (UTC): 2026-10-03 23:12:26
 Total Files Exported:   47
-Total Source Size:      2.33 MB (2446840 bytes)
+Total Source Size:      2.33 MB (2446839 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): ce5ea6274e82bdab13b1fc53cae57b43e1243a2720f6c426e76b5b0828222d04
+DUMP SHA256 (of all lines above this one): 6fd755c6fd1b695bb204dd8d40f2a708b5c7b9beb7579c2796a1ce58f90a7861
