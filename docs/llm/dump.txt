@@ -1,12 +1,12 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-10-03 23:12:26
+Generated (UTC): 2026-10-03 23:14:19
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      f2a229134eddb104234793eb43612b6e8e26dc70
+Git Commit:      49c6556b0e4283e1cd8483b99d23db05c0b282d2
 Git Branch:      main
-Git Dirty:       no
+Git Dirty:       yes (uncommitted changes are included below)
 .NET SDK:        10.0.112
-Files Exported:  47
+Files Exported:  48
 ===============================================================================
 
 DIRECTORY STRUCTURE (exported files only):
@@ -17,6 +17,7 @@ DIRECTORY STRUCTURE (exported files only):
         workflows/
             velixir.yml
     .gitignore
+    README.md
     Zen.Blazor/
         Components/
             App.razor
@@ -612,6 +613,20 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+================================================================================
+FILE:     README.md
+SIZE:     0.12 KB (126 bytes)
+LINES:    4
+SHA256:   0f19c5aa8964dacc3bf28d9648a0a96e420861be54497a9140f4bac94ac1d387
+MODIFIED: 2026-10-03 23:14:06 (UTC)
+================================================================================
+
+#Hello World! 
+
+This is a VERY basic dotnet 10 blazor web application. 
+It is hosted at [VElixir](https://zen.velixir.run/). 
 
 
 ================================================================================
@@ -61674,9 +61689,9 @@ MODIFIED: 2026-10-03 22:53:27 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-10-03 23:12:26
-Total Files Exported:   47
-Total Source Size:      2.33 MB (2446839 bytes)
+EXPORT COMPLETED (UTC): 2026-10-03 23:14:19
+Total Files Exported:   48
+Total Source Size:      2.33 MB (2446965 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): 6fd755c6fd1b695bb204dd8d40f2a708b5c7b9beb7579c2796a1ce58f90a7861
+DUMP SHA256 (of all lines above this one): d9e58f9a12804b7566c15fd8d7e244105a4d9cdfc330f40208af2efa537cc269
