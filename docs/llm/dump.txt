@@ -1,12 +1,12 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-10-04 00:34:58
+Generated (UTC): 2026-10-04 00:50:41
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      ea9c2e5b1192727f3f7614c18bf2405d970d57a2
+Git Commit:      f540d31f55c3bd0f09059aac5378586d674e784a
 Git Branch:      main
 Git Dirty:       no
 .NET SDK:        10.0.112
-Files Exported:  21
+Files Exported:  25
 ===============================================================================
 
 DIRECTORY STRUCTURE (exported files only):
@@ -24,6 +24,8 @@ DIRECTORY STRUCTURE (exported files only):
             Layout/
                 MainLayout.razor
                 MainLayout.razor.css
+                ServerClock.razor
+                ServerClock.razor.css
             Pages/
                 Error.razor
                 Error.razor.css
@@ -35,6 +37,9 @@ DIRECTORY STRUCTURE (exported files only):
         Program.cs
         Properties/
             launchSettings.json
+        Services/
+            ClockService.cs
+            MessageBoard.cs
         Zen.Blazor.csproj
         appsettings.Development.json
         appsettings.json
@@ -52,7 +57,7 @@ FILE:     .github/workflows/velixir.yml
 SIZE:     0.93 KB (948 bytes)
 LINES:    34
 SHA256:   933d3c891d8ccd3640a9b4927f40698bc3736121061101bb19b6dda010db2a6e
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 name: Deploy to velixir
@@ -96,7 +101,7 @@ FILE:     .gitignore
 SIZE:     7.83 KB (8014 bytes)
 LINES:    482
 SHA256:   6aa7efd10031401107668b4157e5994c1919ea7705ac1cc0cffa92acc02cd9a2
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -585,20 +590,22 @@ $RECYCLE.BIN/
 
 ================================================================================
 FILE:     README.md
-SIZE:     0.53 KB (543 bytes)
-LINES:    14
-SHA256:   684c82048438a8a7c286e8c82a8bd230e2ff35b1427f8fe7e88c62246dfb648d
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     0.85 KB (867 bytes)
+LINES:    16
+SHA256:   a4f9d795d863c4afa40b52ae4358f14280b28c0ec5cd957b52d83659798deaeb
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 # zen-velixir-run
 
 Minimal .NET 10 Blazor Server app on the [velixir](https://zen.velixir.run/) free tier (0.25 vCPU, 256 MB).
 
-- No third-party packages, CSS or JS.
-- Component styles in `*.razor.css`; globals in `wwwroot/app.css`.
+- Live message board: anyone posts up to 500 chars, everyone connected sees it instantly. In memory only, newest 50 kept, 2 s per-visitor cooldown.
+- Header shows server time, ticking every second from one shared server timer.
+- No third-party packages, CSS or JS. Evergreen browsers only.
+- Component styles in `*.razor.css`; globals and color tokens (`light-dark()`) in `wwwroot/app.css`.
 - Binds to `PORT` when set; honors `X-Forwarded-For`/`X-Forwarded-Proto` from the edge.
-- Workstation non-concurrent GC and invariant globalization for the memory cap.
+- Workstation non-concurrent GC, invariant globalization and short disconnected-circuit retention for the memory cap.
 - Push to `main` deploys via `.github/workflows/velixir.yml` (secret `VELIXIR_API_KEY`).
 
 ```
@@ -612,7 +619,7 @@ FILE:     Zen.Blazor/Components/App.razor
 SIZE:     0.68 KB (699 bytes)
 LINES:    22
 SHA256:   38e81c2213bef8d17e6426ee61eb76d3bb91140b0fefd8725aa5a04942ad95b1
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 <!DOCTYPE html>
@@ -641,16 +648,17 @@ MODIFIED: 2026-10-03 23:35:38 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Layout/MainLayout.razor
-SIZE:     0.37 KB (375 bytes)
-LINES:    16
-SHA256:   c3cbf7c05c0b37280a60fbcc258f53a62e8cb211df25c2a8d85b098b56d490e0
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     0.42 KB (427 bytes)
+LINES:    17
+SHA256:   8c2a423bf1da80231d4dab8e8767d85fd6edf7655a84576dfd45b21d169ecb04
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 @inherits LayoutComponentBase
 
 <header>
     <a href="" class="brand">Zen</a>
+    <ServerClock @rendermode="InteractiveServer" />
     <a href="https://github.com/kusl/zen-velixir-run" target="_blank" rel="noopener">About</a>
 </header>
 
@@ -667,41 +675,42 @@ MODIFIED: 2026-10-03 23:35:38 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Layout/MainLayout.razor.css
-SIZE:     0.66 KB (680 bytes)
-LINES:    40
-SHA256:   afed26c4ab228ee62955e9b14ac57a20432ba066b7826fb4c43a3759a9ddf760
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     0.71 KB (725 bytes)
+LINES:    41
+SHA256:   3c48e4b18e412f8a343e0581f5dd376cb8c5a606eebaff6c9267f8e7c1ca0e64
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 header {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     align-items: center;
-    gap: 1rem;
-    padding: .75rem 1.5rem;
-    border-bottom: 1px solid #8884;
+    gap: .5rem 1rem;
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--line);
 }
 
 .brand {
     font-weight: 600;
-    color: inherit;
+    color: var(--accent);
     text-decoration: none;
 }
 
 main {
-    max-width: 60rem;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
+    flex: 1;
+    width: 100%;
+    max-width: 44rem;
+    margin-inline: auto;
+    padding: 1rem;
 }
 
 #blazor-error-ui {
     display: none;
     position: fixed;
-    left: 0;
-    bottom: 0;
+    inset: auto 0 0;
     z-index: 1000;
-    width: 100%;
-    padding: .6rem 1.25rem .7rem;
+    padding: .6rem 2.5rem .7rem 1rem;
     color: #000;
     background: lightyellow;
     box-shadow: 0 -1px 2px #0003;
@@ -716,11 +725,69 @@ main {
 
 
 ================================================================================
+FILE:     Zen.Blazor/Components/Layout/ServerClock.razor
+SIZE:     0.72 KB (737 bytes)
+LINES:    28
+SHA256:   b4cb9cf9f4805a7c107e555101d68b1a2647efb6c193c2685da3b2ce20807592
+MODIFIED: 2026-10-04 00:46:24 (UTC)
+================================================================================
+
+@implements IDisposable
+@inject ClockService Clock
+
+<time class="clock" datetime="@Iso">@Display<span class="zone">@Zone</span></time>
+
+@code {
+    private DateTimeOffset _now = DateTimeOffset.Now;
+
+    private string Iso => _now.ToString("O");
+    private string Display => _now.ToString("yyyy-MM-dd HH:mm:ss");
+    private string Zone => _now.Offset == TimeSpan.Zero ? "UTC" : $"UTC{_now:zzz}";
+
+    protected override void OnInitialized()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            Clock.Ticked += OnTick;
+        }
+    }
+
+    private void OnTick(DateTimeOffset now) => _ = InvokeAsync(() =>
+    {
+        _now = now;
+        StateHasChanged();
+    });
+
+    public void Dispose() => Clock.Ticked -= OnTick;
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Components/Layout/ServerClock.razor.css
+SIZE:     0.16 KB (168 bytes)
+LINES:    10
+SHA256:   313b9516b025db4ef81a4e60faecdb24015827e1ce80be2da4f3676cfd3f7f12
+MODIFIED: 2026-10-04 00:46:24 (UTC)
+================================================================================
+
+.clock {
+    color: var(--muted);
+    font-size: .875rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.zone {
+    margin-inline-start: .35em;
+}
+
+
+================================================================================
 FILE:     Zen.Blazor/Components/Pages/Error.razor
 SIZE:     0.59 KB (601 bytes)
 LINES:    25
 SHA256:   56b770ddb260a760cf4865c9a02aff31eff5aa4e729a9ce8b6157f3be975fabd
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 @page "/Error"
@@ -752,69 +819,209 @@ MODIFIED: 2026-10-03 23:35:38 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/Error.razor.css
-SIZE:     0.11 KB (117 bytes)
-LINES:    9
-SHA256:   c747315aa8bd3281513ca6089bce81eed6d2d83b60321fb011cdf2550d4bd6bf
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     0.04 KB (38 bytes)
+LINES:    3
+SHA256:   a27ea01e5be525fe1b3d551d808789d9689a00bd7ed345d9e4321eff5a90b7b6
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 .danger {
-    color: #c62828;
-}
-
-@media (prefers-color-scheme: dark) {
-    .danger {
-        color: #ff6b6b;
-    }
+    color: var(--danger);
 }
 
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/Home.razor
-SIZE:     0.33 KB (333 bytes)
-LINES:    17
-SHA256:   8ae731ce3cc8c4c454ef0c895441f59d06cbf2d46f31ef81c8e5ee3386ebcad6
-MODIFIED: 2026-10-04 00:34:21 (UTC)
+SIZE:     1.98 KB (2028 bytes)
+LINES:    80
+SHA256:   ec46703a8a2f669416d871da8b3694d14ad269bfe710c9394d746b590fa2f2ed
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
+@implements IDisposable
+@inject MessageBoard Board
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Zen</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Say something</h1>
 
-<p>The current server time as of this page initialization is @_current</p>
+<form class="compose" @onsubmit="Send">
+    <textarea @bind="_draft" maxlength="@MessageBoard.MaxLength" rows="3" required
+              aria-label="Message" placeholder="Everyone on this page sees it right away."></textarea>
+    <div class="actions">
+        <span class="status" role="status">@_status</span>
+        <button type="submit" disabled="@(!RendererInfo.IsInteractive)">Send</button>
+    </div>
+</form>
+
+@if (_messages.Count == 0)
+{
+    <p class="empty">No messages yet. Write the first one.</p>
+}
+else
+{
+    <ol class="feed" aria-live="polite" aria-relevant="additions">
+        @foreach (var message in _messages)
+        {
+            <li @key="message.Id">
+                <time datetime="@message.At.ToString("O")">@message.At.ToString("HH:mm:ss")</time>
+                <p>@message.Text</p>
+            </li>
+        }
+    </ol>
+}
 
 @code {
-    private DateTime _current;
+    private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(2);
+
+    private IReadOnlyList<ChatMessage> _messages = [];
+    private string? _draft;
+    private string? _status;
+    private DateTimeOffset _lastSent;
+
     protected override void OnInitialized()
     {
-        base.OnInitialized();
-        _current = DateTime.Now;
+        _messages = Board.Messages;
+        if (RendererInfo.IsInteractive)
+        {
+            Board.Changed += OnChanged;
+        }
     }
+
+    private void OnChanged() => _ = InvokeAsync(() =>
+    {
+        _messages = Board.Messages;
+        StateHasChanged();
+    });
+
+    private void Send()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastSent < Cooldown)
+        {
+            _status = "Wait a moment before sending again.";
+            return;
+        }
+
+        if (!Board.TryPost(_draft))
+        {
+            _status = "Type a message first.";
+            return;
+        }
+
+        _lastSent = now;
+        _draft = null;
+        _status = null;
+    }
+
+    public void Dispose() => Board.Changed -= OnChanged;
 }
 
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/Home.razor.css
-SIZE:     0.04 KB (44 bytes)
-LINES:    4
-SHA256:   8e312834857cd7d9266c90a005cddbfb874de46ce40229755650149725dd4369
-MODIFIED: 2026-10-03 23:24:51 (UTC)
+SIZE:     1.33 KB (1359 bytes)
+LINES:    86
+SHA256:   cf05bd224f50b643c8fdb595d3c4f45f39ffe2372be94026f70223145a4dbe45
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
-h1 
-{
-    border: 1px solid rebeccapurple;
+h1 {
+    margin: .5rem 0 1rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
 }
+
+.compose {
+    display: grid;
+    gap: .5rem;
+}
+
+textarea {
+    width: 100%;
+    min-height: 5.5rem;
+    padding: .6rem .75rem;
+    border: 1px solid var(--line);
+    border-radius: .5rem;
+    background: var(--surface);
+    resize: vertical;
+}
+
+textarea:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.status {
+    color: var(--muted);
+    font-size: .875rem;
+}
+
+button {
+    padding: .5rem 1.25rem;
+    border: 0;
+    border-radius: .5rem;
+    color: #fff;
+    background: var(--accent);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: default;
+}
+
+.empty {
+    margin-top: 1.5rem;
+    color: var(--muted);
+}
+
+.feed {
+    display: grid;
+    gap: .75rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.feed li {
+    padding: .6rem .75rem;
+    border-left: 3px solid var(--accent);
+    border-radius: .25rem;
+    background: var(--surface);
+}
+
+.feed time {
+    display: block;
+    color: var(--muted);
+    font-size: .75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.feed p {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/NotFound.razor
 SIZE:     0.15 KB (154 bytes)
 LINES:    7
 SHA256:   c99cb9f404aadbc492b1e697dbd42d54fc3c59e008753a156d8d82710aaa4648
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 @page "/not-found"
@@ -831,7 +1038,7 @@ FILE:     Zen.Blazor/Components/Routes.razor
 SIZE:     0.29 KB (294 bytes)
 LINES:    6
 SHA256:   f1b6d3574e2fb5d9286936ad6a1421071ba5d2c98d3e20b54e7559492574cf03
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 ﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
@@ -844,10 +1051,10 @@ MODIFIED: 2026-10-03 23:35:16 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/_Imports.razor
-SIZE:     0.41 KB (418 bytes)
-LINES:    11
-SHA256:   2b7001c4157511af99fcb9818ef4d091f17db3e11847c75c6a7d156993770abf
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+SIZE:     0.43 KB (445 bytes)
+LINES:    12
+SHA256:   15f4cc9a4e6a01947d808c89fde67a1abffb9c0953e7ed74a9b4e1d66229f030
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 ﻿@using System.Net.Http
@@ -861,18 +1068,20 @@ MODIFIED: 2026-10-03 23:35:16 (UTC)
 @using Zen.Blazor
 @using Zen.Blazor.Components
 @using Zen.Blazor.Components.Layout
+@using Zen.Blazor.Services
 
 
 ================================================================================
 FILE:     Zen.Blazor/Program.cs
-SIZE:     0.94 KB (961 bytes)
-LINES:    38
-SHA256:   2c51e3b7b2c58da5b7116cae64eb28206413727f567233b70e6cb0acc7478a96
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     1.27 KB (1298 bytes)
+LINES:    47
+SHA256:   c6f0dfc31176faf58dac9ecde1ce4a2782c1bb2eea94c7028b632cc35f7cdd8f
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
 
 using Microsoft.AspNetCore.HttpOverrides;
 using Zen.Blazor.Components;
+using Zen.Blazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -888,8 +1097,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+builder.Services.AddSingleton<MessageBoard>();
+builder.Services.AddSingleton<ClockService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
+
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(o =>
+    {
+        o.DisconnectedCircuitMaxRetained = 20;
+        o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(1);
+    });
 
 var app = builder.Build();
 
@@ -916,7 +1133,7 @@ FILE:     Zen.Blazor/Properties/launchSettings.json
 SIZE:     0.64 KB (658 bytes)
 LINES:    23
 SHA256:   45206c0b54b7fdd47ca891779ed02c1333a231277e7437f04328fc4bfe2e0c10
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 {
@@ -945,11 +1162,149 @@ MODIFIED: 2026-10-03 23:35:16 (UTC)
 
 
 ================================================================================
+FILE:     Zen.Blazor/Services/ClockService.cs
+SIZE:     1.02 KB (1046 bytes)
+LINES:    32
+SHA256:   cd84b4b0a050347756ac0201948696ac176cde74e85612a993caaeb8edf444a1
+MODIFIED: 2026-10-04 00:46:24 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Services;
+
+public sealed class ClockService(ILogger<ClockService> logger) : BackgroundService
+{
+    public event Action<DateTimeOffset>? Ticked;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var delay = 1005 - DateTimeOffset.Now.Millisecond;
+            await Task.Delay(delay, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            if (stoppingToken.IsCancellationRequested || Ticked is not { } handlers)
+            {
+                continue;
+            }
+
+            var now = DateTimeOffset.Now;
+            foreach (var handler in handlers.GetInvocationList().Cast<Action<DateTimeOffset>>())
+            {
+                try
+                {
+                    handler(now);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Clock subscriber failed");
+                }
+            }
+        }
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Services/MessageBoard.cs
+SIZE:     2.26 KB (2311 bytes)
+LINES:    86
+SHA256:   3d4a4abf3b20233e16c52ca6f9663e5484176bd5d0cd7801cced59dac0b3470b
+MODIFIED: 2026-10-04 00:46:24 (UTC)
+================================================================================
+
+using System.Globalization;
+using System.Text.RegularExpressions;
+
+namespace Zen.Blazor.Services;
+
+public sealed record ChatMessage(long Id, DateTimeOffset At, string Text);
+
+public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
+{
+    public const int MaxLength = 500;
+    public const int Capacity = 50;
+
+    private readonly Lock _gate = new();
+    private ChatMessage[] _messages = [];
+    private long _nextId;
+
+    public event Action? Changed;
+
+    public IReadOnlyList<ChatMessage> Messages => Volatile.Read(ref _messages);
+
+    public bool TryPost(string? input)
+    {
+        var text = Normalize(input);
+        if (text.Length == 0)
+        {
+            return false;
+        }
+
+        lock (_gate)
+        {
+            var current = _messages;
+            var next = new ChatMessage[Math.Min(current.Length + 1, Capacity)];
+            next[0] = new ChatMessage(++_nextId, DateTimeOffset.Now, text);
+            Array.Copy(current, 0, next, 1, next.Length - 1);
+            Volatile.Write(ref _messages, next);
+        }
+
+        Notify();
+        return true;
+    }
+
+    public static string Normalize(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return "";
+        }
+
+        var text = string.Concat(input.ReplaceLineEndings("\n").Where(c => c == '\n' || !char.IsControl(c)));
+        text = ExtraBlankLines().Replace(text, "\n\n").Trim();
+
+        if (text.Length > MaxLength)
+        {
+            var cut = char.IsHighSurrogate(text[MaxLength - 1]) ? MaxLength - 1 : MaxLength;
+            text = text[..cut].TrimEnd();
+        }
+
+        return text.Any(IsVisible) ? text : "";
+    }
+
+    private static bool IsVisible(char c) =>
+        !char.IsWhiteSpace(c) && char.GetUnicodeCategory(c) != UnicodeCategory.Format;
+
+    private void Notify()
+    {
+        if (Changed is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Action>())
+        {
+            try
+            {
+                handler();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Message board subscriber failed");
+            }
+        }
+    }
+
+    [GeneratedRegex(@"\n{3,}")]
+    private static partial Regex ExtraBlankLines();
+}
+
+
+================================================================================
 FILE:     Zen.Blazor/Zen.Blazor.csproj
 SIZE:     0.54 KB (551 bytes)
 LINES:    14
 SHA256:   8ed207b2eff96adbf58520e4b0e0029075ed4dafd879ae211886501b82dd1578
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -973,7 +1328,7 @@ FILE:     Zen.Blazor/appsettings.Development.json
 SIZE:     0.12 KB (119 bytes)
 LINES:    8
 SHA256:   817db0bf2ecca78364c41dbaf7949bf2504cf47a1c3d0d54f3be8178fefc030b
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 {
@@ -991,7 +1346,7 @@ FILE:     Zen.Blazor/appsettings.json
 SIZE:     0.14 KB (148 bytes)
 LINES:    9
 SHA256:   50bd49a0459952c974467523f9f1ae0a70f660cf8ac46177754bc629fac48cfe
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 {
@@ -1007,56 +1362,54 @@ MODIFIED: 2026-10-03 23:35:38 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/wwwroot/app.css
-SIZE:     0.65 KB (669 bytes)
-LINES:    45
-SHA256:   1399d11ecdc4b79b0a24f84e565ea2ec12780c0878498f618dde1303333d8a60
-MODIFIED: 2026-10-03 23:35:38 (UTC)
+SIZE:     0.80 KB (818 bytes)
+LINES:    43
+SHA256:   09c55adfeb46d6d8465de967676a37f1078171653fa5664a485904a475435dc4
+MODIFIED: 2026-10-04 00:46:24 (UTC)
 ================================================================================
+
+:root {
+    color-scheme: light dark;
+    --fg: light-dark(#1d1b20, #e8e6eb);
+    --bg: light-dark(#ffffff, #18161b);
+    --surface: light-dark(#f4f2f7, #23202a);
+    --muted: light-dark(#5e5a66, #a29eaa);
+    --line: light-dark(#0000001f, #ffffff24);
+    --accent: light-dark(#663399, #9a6dd1);
+    --link: light-dark(#006bb7, #6cb6ff);
+    --danger: light-dark(#c62828, #ff6b6b);
+}
 
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    font-family: system-ui, sans-serif;
     line-height: 1.5;
 }
 
 a {
-    color: #006bb7;
+    color: var(--link);
 }
 
-@media (prefers-color-scheme: dark) {
-    a {
-        color: #6cb6ff;
-    }
+button, textarea {
+    font: inherit;
+    color: inherit;
 }
 
 h1:focus {
     outline: none;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid #e50000;
-}
-
-.validation-message {
-    color: #e50000;
-}
-
-.blazor-error-boundary {
-    padding: 1rem;
-    color: #fff;
-    background: #b32121;
-}
-
-.blazor-error-boundary::after {
-    content: "An error has occurred.";
 }
 
 
@@ -1065,7 +1418,7 @@ FILE:     export.sh
 SIZE:     7.33 KB (7510 bytes)
 LINES:    246
 SHA256:   9ad9d78f07b65d68d968087e673fc1104529df79158e97008dc1ccf2e4b271d4
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:42 (UTC)
 ================================================================================
 
 #!/usr/bin/env bash
@@ -1321,7 +1674,7 @@ FILE:     zen-velixir-run.slnx
 SIZE:     0.07 KB (73 bytes)
 LINES:    3
 SHA256:   e7f0221a7bc4f01044f1b1f3c744fb03300dde7583088048e03ce65dcad308af
-MODIFIED: 2026-10-03 23:35:16 (UTC)
+MODIFIED: 2026-10-04 00:45:45 (UTC)
 ================================================================================
 
 <Solution>
@@ -1330,9 +1683,9 @@ MODIFIED: 2026-10-03 23:35:16 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-10-04 00:34:58
-Total Files Exported:   21
-Total Source Size:      0.02 MB (23909 bytes)
+EXPORT COMPLETED (UTC): 2026-10-04 00:50:41
+Total Files Exported:   25
+Total Source Size:      0.03 MB (32036 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): 826a13e24cbea7c4ef456420e8f83fda3d945fe77d6d51e797ac6335ae800e15
+DUMP SHA256 (of all lines above this one): 335757e5ac3d47008d8c63c4a0197b9524fa327e71e131052e307f7a5c1ca174
