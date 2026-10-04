@@ -6,6 +6,7 @@ so we should probably get rid of any older messages as newer messages come in
 overall the website should be resilient and roll with the punches 
 there is no need to support anything but the latest evergreen browser versions 
 so please keep the html and css as clean as possible with this in mind 
+also somewhere either the header or the footer it should show the current server time and it should keep ticking once a second 
 
 Delivery
 Whole project as one tar.gz, unambiguous file placement
