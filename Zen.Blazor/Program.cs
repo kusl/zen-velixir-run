@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Zen.Blazor.Components;
+using Zen.Blazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +16,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+builder.Services.AddSingleton<MessageBoard>();
+builder.Services.AddSingleton<ClockService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
+
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(o =>
+    {
+        o.DisconnectedCircuitMaxRetained = 20;
+        o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(1);
+    });
 
 var app = builder.Build();
 

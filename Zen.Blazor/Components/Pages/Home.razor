@@ -1,17 +1,80 @@
-﻿@page "/"
+@page "/"
 @rendermode InteractiveServer
+@implements IDisposable
+@inject MessageBoard Board
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Zen</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1>Say something</h1>
 
-<p>The current server time as of this page initialization is @_current</p>
+<form class="compose" @onsubmit="Send">
+    <textarea @bind="_draft" maxlength="@MessageBoard.MaxLength" rows="3" required
+              aria-label="Message" placeholder="Everyone on this page sees it right away."></textarea>
+    <div class="actions">
+        <span class="status" role="status">@_status</span>
+        <button type="submit" disabled="@(!RendererInfo.IsInteractive)">Send</button>
+    </div>
+</form>
+
+@if (_messages.Count == 0)
+{
+    <p class="empty">No messages yet. Write the first one.</p>
+}
+else
+{
+    <ol class="feed" aria-live="polite" aria-relevant="additions">
+        @foreach (var message in _messages)
+        {
+            <li @key="message.Id">
+                <time datetime="@message.At.ToString("O")">@message.At.ToString("HH:mm:ss")</time>
+                <p>@message.Text</p>
+            </li>
+        }
+    </ol>
+}
 
 @code {
-    private DateTime _current;
+    private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(2);
+
+    private IReadOnlyList<ChatMessage> _messages = [];
+    private string? _draft;
+    private string? _status;
+    private DateTimeOffset _lastSent;
+
     protected override void OnInitialized()
     {
-        base.OnInitialized();
-        _current = DateTime.Now;
+        _messages = Board.Messages;
+        if (RendererInfo.IsInteractive)
+        {
+            Board.Changed += OnChanged;
+        }
     }
+
+    private void OnChanged() => _ = InvokeAsync(() =>
+    {
+        _messages = Board.Messages;
+        StateHasChanged();
+    });
+
+    private void Send()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastSent < Cooldown)
+        {
+            _status = "Wait a moment before sending again.";
+            return;
+        }
+
+        if (!Board.TryPost(_draft))
+        {
+            _status = "Type a message first.";
+            return;
+        }
+
+        _lastSent = now;
+        _draft = null;
+        _status = null;
+    }
+
+    public void Dispose() => Board.Changed -= OnChanged;
 }

@@ -1,45 +1,43 @@
+:root {
+    color-scheme: light dark;
+    --fg: light-dark(#1d1b20, #e8e6eb);
+    --bg: light-dark(#ffffff, #18161b);
+    --surface: light-dark(#f4f2f7, #23202a);
+    --muted: light-dark(#5e5a66, #a29eaa);
+    --line: light-dark(#0000001f, #ffffff24);
+    --accent: light-dark(#663399, #9a6dd1);
+    --link: light-dark(#006bb7, #6cb6ff);
+    --danger: light-dark(#c62828, #ff6b6b);
+}
+
 *, *::before, *::after {
     box-sizing: border-box;
 }
 
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
 body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
     margin: 0;
-    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--fg);
+    background: var(--bg);
+    font-family: system-ui, sans-serif;
     line-height: 1.5;
 }
 
 a {
-    color: #006bb7;
+    color: var(--link);
 }
 
-@media (prefers-color-scheme: dark) {
-    a {
-        color: #6cb6ff;
-    }
+button, textarea {
+    font: inherit;
+    color: inherit;
 }
 
 h1:focus {
     outline: none;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid #e50000;
-}
-
-.validation-message {
-    color: #e50000;
-}
-
-.blazor-error-boundary {
-    padding: 1rem;
-    color: #fff;
-    background: #b32121;
-}
-
-.blazor-error-boundary::after {
-    content: "An error has occurred.";
 }

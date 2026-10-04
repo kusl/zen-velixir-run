@@ -1,0 +1,10 @@
+.clock {
+    color: var(--muted);
+    font-size: .875rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.zone {
+    margin-inline-start: .35em;
+}

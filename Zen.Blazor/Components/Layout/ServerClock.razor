@@ -1,0 +1,28 @@
+@implements IDisposable
+@inject ClockService Clock
+
+<time class="clock" datetime="@Iso">@Display<span class="zone">@Zone</span></time>
+
+@code {
+    private DateTimeOffset _now = DateTimeOffset.Now;
+
+    private string Iso => _now.ToString("O");
+    private string Display => _now.ToString("yyyy-MM-dd HH:mm:ss");
+    private string Zone => _now.Offset == TimeSpan.Zero ? "UTC" : $"UTC{_now:zzz}";
+
+    protected override void OnInitialized()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            Clock.Ticked += OnTick;
+        }
+    }
+
+    private void OnTick(DateTimeOffset now) => _ = InvokeAsync(() =>
+    {
+        _now = now;
+        StateHasChanged();
+    });
+
+    public void Dispose() => Clock.Ticked -= OnTick;
+}
