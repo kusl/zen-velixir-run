@@ -1,0 +1,15 @@
+within the limitations of velixir, 
+please implement a feature that allows any visitor to type something within reason like maybe about 500 characters or something 
+and then any visitor to the website will instantly see this text as well 
+there is no persistence and no guarantee of up time 
+so we should probably get rid of any older messages as newer messages come in 
+overall the website should be resilient and roll with the punches 
+there is no need to support anything but the latest evergreen browser versions 
+so please keep the html and css as clean as possible with this in mind 
+
+Delivery
+Whole project as one tar.gz, unambiguous file placement
+Any files to delete on updates called out explicitly
+No bespoke sed/patch scripts — full files only for anything that changes
+Docs updated alongside code changes
+Low verbosity, no code comments
