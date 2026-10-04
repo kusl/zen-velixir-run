@@ -12,6 +12,7 @@
               aria-label="Message" placeholder="Everyone on this page sees it right away."></textarea>
     <div class="actions">
         <span class="status" role="status">@_status</span>
+        <span class="count">@(_draft?.Length ?? 0) / @MessageBoard.MaxLength</span>
         <button type="submit" disabled="@(!RendererInfo.IsInteractive)">Send</button>
     </div>
 </form>
