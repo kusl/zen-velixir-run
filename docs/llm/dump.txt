@@ -1,8 +1,8 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-10-04 00:50:41
+Generated (UTC): 2026-10-04 01:14:57
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      f540d31f55c3bd0f09059aac5378586d674e784a
+Git Commit:      8e9baf21ce4c17f0e1791169606b3c44fc67a6cb
 Git Branch:      main
 Git Dirty:       no
 .NET SDK:        10.0.112
@@ -832,10 +832,10 @@ MODIFIED: 2026-10-04 00:46:24 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/Home.razor
-SIZE:     1.98 KB (2028 bytes)
-LINES:    80
-SHA256:   ec46703a8a2f669416d871da8b3694d14ad269bfe710c9394d746b590fa2f2ed
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+SIZE:     2.06 KB (2112 bytes)
+LINES:    81
+SHA256:   a0c09698803983de36f6504a086b1140eb7c2689c93d2428038dd4fff6bc76e2
+MODIFIED: 2026-10-04 01:10:04 (UTC)
 ================================================================================
 
 @page "/"
@@ -852,6 +852,7 @@ MODIFIED: 2026-10-04 00:46:24 (UTC)
               aria-label="Message" placeholder="Everyone on this page sees it right away."></textarea>
     <div class="actions">
         <span class="status" role="status">@_status</span>
+        <span class="count">@(_draft?.Length ?? 0) / @MessageBoard.MaxLength</span>
         <button type="submit" disabled="@(!RendererInfo.IsInteractive)">Send</button>
     </div>
 </form>
@@ -1683,9 +1684,9 @@ MODIFIED: 2026-10-04 00:45:45 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-10-04 00:50:41
+EXPORT COMPLETED (UTC): 2026-10-04 01:14:57
 Total Files Exported:   25
-Total Source Size:      0.03 MB (32036 bytes)
+Total Source Size:      0.03 MB (32120 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): 335757e5ac3d47008d8c63c4a0197b9524fa327e71e131052e307f7a5c1ca174
+DUMP SHA256 (of all lines above this one): 7356a48304f335d7d68db01e3bf9cfeb14f3f05edba1d5dc80f806004aa43a12
