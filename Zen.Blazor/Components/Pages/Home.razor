@@ -8,7 +8,7 @@
 <h1>Say something</h1>
 
 <form class="compose" @onsubmit="Send">
-    <textarea @bind="_draft" maxlength="@MessageBoard.MaxLength" rows="3" required
+    <textarea @bind="_draft" @bind:event="oninput" maxlength="@MessageBoard.MaxLength" rows="3" required
               aria-label="Message" placeholder="Everyone on this page sees it right away."></textarea>
     <div class="actions">
         <span class="status" role="status">@_status</span>
