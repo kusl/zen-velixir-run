@@ -7,6 +7,8 @@ overall the website should be resilient and roll with the punches
 there is no need to support anything but the latest evergreen browser versions 
 so please keep the html and css as clean as possible with this in mind 
 also somewhere either the header or the footer it should show the current server time and it should keep ticking once a second 
+it is critical for the website to be fully responsive 
+yes, only evergreen browsers but should work fine on android, iPhone, as well as the desktop / laptop browsers 
 
 Delivery
 Whole project as one tar.gz, unambiguous file placement
