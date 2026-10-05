@@ -1,8 +1,8 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-10-04 23:13:20
+Generated (UTC): 2026-10-05 09:54:14
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      1f1bae39bbbada8a33f94967324824b2ae8d3917
+Git Commit:      5bab768f01210239213e5925328317bbe6d1aa3e
 Git Branch:      main
 Git Dirty:       no
 .NET SDK:        10.0.112
@@ -57,7 +57,7 @@ FILE:     .github/workflows/velixir.yml
 SIZE:     0.93 KB (948 bytes)
 LINES:    34
 SHA256:   933d3c891d8ccd3640a9b4927f40698bc3736121061101bb19b6dda010db2a6e
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 name: Deploy to velixir
@@ -101,7 +101,7 @@ FILE:     .gitignore
 SIZE:     7.83 KB (8014 bytes)
 LINES:    482
 SHA256:   6aa7efd10031401107668b4157e5994c1919ea7705ac1cc0cffa92acc02cd9a2
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 ## Ignore Visual Studio temporary files, build results, and
@@ -590,10 +590,10 @@ $RECYCLE.BIN/
 
 ================================================================================
 FILE:     README.md
-SIZE:     0.85 KB (867 bytes)
-LINES:    16
-SHA256:   a4f9d795d863c4afa40b52ae4358f14280b28c0ec5cd957b52d83659798deaeb
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+SIZE:     1.11 KB (1132 bytes)
+LINES:    18
+SHA256:   1969b23e83bf8d76363cf2711ee9110a0bbf962ed9315ecb540b197dfe8dfea1
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
 # zen-velixir-run
@@ -605,7 +605,9 @@ Minimal .NET 10 Blazor Server app on the [velixir](https://zen.velixir.run/) fre
 - No third-party packages, CSS or JS. Evergreen browsers only.
 - Component styles in `*.razor.css`; globals and color tokens (`light-dark()`) in `wwwroot/app.css`.
 - Binds to `PORT` when set; honors `X-Forwarded-For`/`X-Forwarded-Proto` from the edge.
-- Workstation non-concurrent GC, invariant globalization and short disconnected-circuit retention for the memory cap.
+- Memory cap: workstation non-concurrent GC, `ConserveMemory=7`, no tiered PGO, invariant globalization, short disconnected-circuit retention, 2 unacked render batches per circuit.
+- Data protection keys are in-memory; a restart invalidates antiforgery cookies, so that log category is off. Restarts show as `Application started` in logs.
+- Messages truncate on grapheme boundaries.
 - Push to `main` deploys via `.github/workflows/velixir.yml` (secret `VELIXIR_API_KEY`).
 
 ```
@@ -619,7 +621,7 @@ FILE:     Zen.Blazor/Components/App.razor
 SIZE:     0.68 KB (699 bytes)
 LINES:    22
 SHA256:   38e81c2213bef8d17e6426ee61eb76d3bb91140b0fefd8725aa5a04942ad95b1
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 <!DOCTYPE html>
@@ -651,7 +653,7 @@ FILE:     Zen.Blazor/Components/Layout/MainLayout.razor
 SIZE:     0.42 KB (427 bytes)
 LINES:    17
 SHA256:   8c2a423bf1da80231d4dab8e8767d85fd6edf7655a84576dfd45b21d169ecb04
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 @inherits LayoutComponentBase
@@ -678,7 +680,7 @@ FILE:     Zen.Blazor/Components/Layout/MainLayout.razor.css
 SIZE:     0.71 KB (725 bytes)
 LINES:    41
 SHA256:   3c48e4b18e412f8a343e0581f5dd376cb8c5a606eebaff6c9267f8e7c1ca0e64
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 header {
@@ -729,7 +731,7 @@ FILE:     Zen.Blazor/Components/Layout/ServerClock.razor
 SIZE:     0.72 KB (737 bytes)
 LINES:    28
 SHA256:   b4cb9cf9f4805a7c107e555101d68b1a2647efb6c193c2685da3b2ce20807592
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 @implements IDisposable
@@ -767,7 +769,7 @@ FILE:     Zen.Blazor/Components/Layout/ServerClock.razor.css
 SIZE:     0.16 KB (168 bytes)
 LINES:    10
 SHA256:   313b9516b025db4ef81a4e60faecdb24015827e1ce80be2da4f3676cfd3f7f12
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 .clock {
@@ -787,7 +789,7 @@ FILE:     Zen.Blazor/Components/Pages/Error.razor
 SIZE:     0.59 KB (601 bytes)
 LINES:    25
 SHA256:   56b770ddb260a760cf4865c9a02aff31eff5aa4e729a9ce8b6157f3be975fabd
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 @page "/Error"
@@ -822,7 +824,7 @@ FILE:     Zen.Blazor/Components/Pages/Error.razor.css
 SIZE:     0.04 KB (38 bytes)
 LINES:    3
 SHA256:   a27ea01e5be525fe1b3d551d808789d9689a00bd7ed345d9e4321eff5a90b7b6
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 .danger {
@@ -835,7 +837,7 @@ FILE:     Zen.Blazor/Components/Pages/Home.razor
 SIZE:     2.08 KB (2134 bytes)
 LINES:    81
 SHA256:   b4c49f5cd5e58f793a3423457b0dca48a122e8ee32dc66d507fc6883a53be3e7
-MODIFIED: 2026-10-04 23:12:45 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 @page "/"
@@ -923,10 +925,10 @@ else
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Pages/Home.razor.css
-SIZE:     1.33 KB (1359 bytes)
+SIZE:     1.30 KB (1336 bytes)
 LINES:    86
-SHA256:   cf05bd224f50b643c8fdb595d3c4f45f39ffe2372be94026f70223145a4dbe45
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+SHA256:   7719bbfcf98a24c87c80ed6c408cc83c76ff855cd71c8a160d0f48fe9fb3031b
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
 h1 {
@@ -959,11 +961,11 @@ button:focus-visible {
 .actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
 }
 
 .status {
+    flex: 1;
     color: var(--muted);
     font-size: .875rem;
 }
@@ -1022,7 +1024,7 @@ FILE:     Zen.Blazor/Components/Pages/NotFound.razor
 SIZE:     0.15 KB (154 bytes)
 LINES:    7
 SHA256:   c99cb9f404aadbc492b1e697dbd42d54fc3c59e008753a156d8d82710aaa4648
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 @page "/not-found"
@@ -1039,7 +1041,7 @@ FILE:     Zen.Blazor/Components/Routes.razor
 SIZE:     0.29 KB (294 bytes)
 LINES:    6
 SHA256:   f1b6d3574e2fb5d9286936ad6a1421071ba5d2c98d3e20b54e7559492574cf03
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 ﻿<Router AppAssembly="typeof(Program).Assembly" NotFoundPage="typeof(Pages.NotFound)">
@@ -1055,7 +1057,7 @@ FILE:     Zen.Blazor/Components/_Imports.razor
 SIZE:     0.43 KB (445 bytes)
 LINES:    12
 SHA256:   15f4cc9a4e6a01947d808c89fde67a1abffb9c0953e7ed74a9b4e1d66229f030
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 ﻿@using System.Net.Http
@@ -1074,12 +1076,13 @@ MODIFIED: 2026-10-04 00:46:24 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Program.cs
-SIZE:     1.27 KB (1298 bytes)
-LINES:    47
-SHA256:   c6f0dfc31176faf58dac9ecde1ce4a2782c1bb2eea94c7028b632cc35f7cdd8f
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+SIZE:     1.44 KB (1471 bytes)
+LINES:    51
+SHA256:   4535c18c6358327431205aa65668b4489c323802df6aff99319cb65c50b0caa7
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Zen.Blazor.Components;
 using Zen.Blazor.Services;
@@ -1098,6 +1101,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+
 builder.Services.AddSingleton<MessageBoard>();
 builder.Services.AddSingleton<ClockService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
@@ -1107,6 +1112,7 @@ builder.Services.AddRazorComponents()
     {
         o.DisconnectedCircuitMaxRetained = 20;
         o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(1);
+        o.MaxBufferedUnacknowledgedRenderBatches = 2;
     });
 
 var app = builder.Build();
@@ -1134,7 +1140,7 @@ FILE:     Zen.Blazor/Properties/launchSettings.json
 SIZE:     0.64 KB (658 bytes)
 LINES:    23
 SHA256:   45206c0b54b7fdd47ca891779ed02c1333a231277e7437f04328fc4bfe2e0c10
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 {
@@ -1167,7 +1173,7 @@ FILE:     Zen.Blazor/Services/ClockService.cs
 SIZE:     1.02 KB (1046 bytes)
 LINES:    32
 SHA256:   cd84b4b0a050347756ac0201948696ac176cde74e85612a993caaeb8edf444a1
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 namespace Zen.Blazor.Services;
@@ -1206,10 +1212,10 @@ public sealed class ClockService(ILogger<ClockService> logger) : BackgroundServi
 
 ================================================================================
 FILE:     Zen.Blazor/Services/MessageBoard.cs
-SIZE:     2.26 KB (2311 bytes)
-LINES:    86
-SHA256:   3d4a4abf3b20233e16c52ca6f9663e5484176bd5d0cd7801cced59dac0b3470b
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+SIZE:     2.46 KB (2522 bytes)
+LINES:    97
+SHA256:   b77886e3e2e6ee3119f8494832535271c15f270454b32d9b219e3be02b0d3fe1
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
 using System.Globalization;
@@ -1265,7 +1271,18 @@ public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
 
         if (text.Length > MaxLength)
         {
-            var cut = char.IsHighSurrogate(text[MaxLength - 1]) ? MaxLength - 1 : MaxLength;
+            var cut = 0;
+            while (cut < text.Length)
+            {
+                var next = StringInfo.GetNextTextElementLength(text, cut);
+                if (cut + next > MaxLength)
+                {
+                    break;
+                }
+
+                cut += next;
+            }
+
             text = text[..cut].TrimEnd();
         }
 
@@ -1302,10 +1319,10 @@ public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
 
 ================================================================================
 FILE:     Zen.Blazor/Zen.Blazor.csproj
-SIZE:     0.54 KB (551 bytes)
-LINES:    14
-SHA256:   8ed207b2eff96adbf58520e4b0e0029075ed4dafd879ae211886501b82dd1578
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+SIZE:     0.68 KB (698 bytes)
+LINES:    19
+SHA256:   b58940280332b6a5557d4c331b9db5cc90fbc1b9271be09d0ff5dcce31ba7a11
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -1317,9 +1334,14 @@ MODIFIED: 2026-10-04 00:45:42 (UTC)
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>false</TieredPGO>
     <InvariantGlobalization>true</InvariantGlobalization>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
+  </ItemGroup>
 
 </Project>
 
@@ -1329,7 +1351,7 @@ FILE:     Zen.Blazor/appsettings.Development.json
 SIZE:     0.12 KB (119 bytes)
 LINES:    8
 SHA256:   817db0bf2ecca78364c41dbaf7949bf2504cf47a1c3d0d54f3be8178fefc030b
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 {
@@ -1344,17 +1366,18 @@ MODIFIED: 2026-10-04 00:45:42 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/appsettings.json
-SIZE:     0.14 KB (148 bytes)
-LINES:    9
-SHA256:   50bd49a0459952c974467523f9f1ae0a70f660cf8ac46177754bc629fac48cfe
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+SIZE:     0.19 KB (198 bytes)
+LINES:    10
+SHA256:   df8acc132a075a6b6a6796929fb2d6c441c87f88f76794de364cc2206dec9334
+MODIFIED: 2026-10-05 09:30:20 (UTC)
 ================================================================================
 
 {
   "Logging": {
     "LogLevel": {
       "Default": "Warning",
-      "Microsoft.Hosting.Lifetime": "Information"
+      "Microsoft.Hosting.Lifetime": "Information",
+      "Microsoft.AspNetCore.Antiforgery": "None"
     }
   },
   "AllowedHosts": "*"
@@ -1366,7 +1389,7 @@ FILE:     Zen.Blazor/wwwroot/app.css
 SIZE:     0.80 KB (818 bytes)
 LINES:    43
 SHA256:   09c55adfeb46d6d8465de967676a37f1078171653fa5664a485904a475435dc4
-MODIFIED: 2026-10-04 00:46:24 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 :root {
@@ -1419,7 +1442,7 @@ FILE:     export.sh
 SIZE:     7.33 KB (7510 bytes)
 LINES:    246
 SHA256:   9ad9d78f07b65d68d968087e673fc1104529df79158e97008dc1ccf2e4b271d4
-MODIFIED: 2026-10-04 00:45:42 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 #!/usr/bin/env bash
@@ -1675,7 +1698,7 @@ FILE:     zen-velixir-run.slnx
 SIZE:     0.07 KB (73 bytes)
 LINES:    3
 SHA256:   e7f0221a7bc4f01044f1b1f3c744fb03300dde7583088048e03ce65dcad308af
-MODIFIED: 2026-10-04 00:45:45 (UTC)
+MODIFIED: 2026-10-05 09:30:05 (UTC)
 ================================================================================
 
 <Solution>
@@ -1684,9 +1707,9 @@ MODIFIED: 2026-10-04 00:45:45 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-10-04 23:13:20
+EXPORT COMPLETED (UTC): 2026-10-05 09:54:14
 Total Files Exported:   25
-Total Source Size:      0.03 MB (32142 bytes)
+Total Source Size:      0.03 MB (32965 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): a554c17a9072b0a1a1799710510f19f56e810b816df1634e8537504031c2c002
+DUMP SHA256 (of all lines above this one): e39291f612ccde2e49a4847c9fa7cbeba3e45cd77ebb73ab5725f780733f492a
