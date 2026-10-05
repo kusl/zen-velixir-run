@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Zen.Blazor.Components;
 using Zen.Blazor.Services;
@@ -16,6 +17,8 @@ builder.Services.Configure<ForwardedHeadersOptions>(o =>
     o.KnownProxies.Clear();
 });
 
+builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
+
 builder.Services.AddSingleton<MessageBoard>();
 builder.Services.AddSingleton<ClockService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
@@ -25,6 +28,7 @@ builder.Services.AddRazorComponents()
     {
         o.DisconnectedCircuitMaxRetained = 20;
         o.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(1);
+        o.MaxBufferedUnacknowledgedRenderBatches = 2;
     });
 
 var app = builder.Build();

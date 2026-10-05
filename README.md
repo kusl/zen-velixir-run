@@ -7,7 +7,9 @@ Minimal .NET 10 Blazor Server app on the [velixir](https://zen.velixir.run/) fre
 - No third-party packages, CSS or JS. Evergreen browsers only.
 - Component styles in `*.razor.css`; globals and color tokens (`light-dark()`) in `wwwroot/app.css`.
 - Binds to `PORT` when set; honors `X-Forwarded-For`/`X-Forwarded-Proto` from the edge.
-- Workstation non-concurrent GC, invariant globalization and short disconnected-circuit retention for the memory cap.
+- Memory cap: workstation non-concurrent GC, `ConserveMemory=7`, no tiered PGO, invariant globalization, short disconnected-circuit retention, 2 unacked render batches per circuit.
+- Data protection keys are in-memory; a restart invalidates antiforgery cookies, so that log category is off. Restarts show as `Application started` in logs.
+- Messages truncate on grapheme boundaries.
 - Push to `main` deploys via `.github/workflows/velixir.yml` (secret `VELIXIR_API_KEY`).
 
 ```

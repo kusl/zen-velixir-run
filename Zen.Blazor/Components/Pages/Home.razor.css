@@ -28,11 +28,11 @@ button:focus-visible {
 .actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
 }
 
 .status {
+    flex: 1;
     color: var(--muted);
     font-size: .875rem;
 }

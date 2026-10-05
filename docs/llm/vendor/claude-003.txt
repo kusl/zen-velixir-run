@@ -1,0 +1,59 @@
+
+/
+Claude finished the response
+1791191967926_image.png
+1791191993490_image.png
+1791192134523_image.png
+1791192159236_image.png
+1791192442089_image.png
+
+09:18:18.03587-bfzr2fail: Microsoft.AspNetCore.Antiforgery.DefaultAntiforgery[7] 09:18:18.03587-bfzr2 An exception was thrown while deserializing the token. 09:18:18.03587-bfzr2 Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException: The antiforgery token could not be decrypted. 09:18:18.03
+
+pasted
+
+please review the logs and screenshots in relation with the latest dump.txt
+I have about a hundred tabs of which about twenty are refreshing once every ten seconds and one tab that is writing a new message every ten seconds or so. I also throw in some emojis from my phone once in a while to see what happens
+
+Ran 3 commands, read memory, shared files
+Presented file
+What the evidence says: the process is crash-restarting, most likely from running out of memory.
+
+The clearest signal is that the antiforgery key changes. At 09:18 the missing key is {a2e96abc…}, and at 09:22 it's {cdab904e…}. Data protection keys only live in memory, so each new key ring means a new process. Every cookie issued by the previous process then fails to decrypt, which is the burst of ~20 identical fails in 50 ms: one for each tab reloading at once. Two different missing keys four minutes apart means at least two restarts in that window.
+
+The memory numbers point the same way. Screenshot 1 shows 248/256 MB (96.9%). The next shows 68 MB, then 144 MB a few minutes later. Meanwhile the replica uptime keeps counting ("up 10h 4m" → "10h 7m"), so velixir appears to restart the container without counting it as a new replica. That fits an OOM kill followed by every tab reconnecting at once. The chart matches this too: req/s jumps to ~56 and the error rate spikes at the right edge, and CPU sits at 88% of 250m while ~100 circuits rebuild together.
+
+The antiforgery errors themselves are harmless. The response sets a fresh cookie and nothing breaks for the user. They're a symptom of the restarts, not the cause.
+
+Why the memory runs out: about 100 open tabs means about 100 live circuits. Each one holds its own renderer state and SignalR buffers, and gets a clock render every second. On top of that, 20 tabs reload every 10 s, and each reload means a prerender plus a new circuit. The runtime baseline is ~60–70 MB, so you're on the edge of 256 MB. The changes below lower per-circuit memory and make the GC work harder before hitting the limit, but 100 Blazor Server circuits in 256 MB will stay tight. Honestly, your test is near this tier's ceiling for this architecture.
+
+Other observations:
+
+Latency: the average latency (~2.1 s) and the p95/p99 pinned at exactly 5000 ms are almost certainly long-lived SignalR/WebSocket requests being counted, not slow pages.
+Unexplained 4xx: 5xx stays flat at 1,993, but 4xx keeps climbing (+150 over a few minutes). The runtime logs don't show requests, so I can't attribute it. Bot 404s or rejected circuit reconnects are the likely candidates.
+Send-row layout: in screenshot 5, "0 / 500" sits mid-row because the empty status span collapses under space-between.
+Emoji truncation: your emoji posts are cut at 500 UTF-16 units. The surrogate check prevents broken pairs, but it can still split a ZWJ sequence or strip a variation selector.
+Cooldown: the cooldown is per circuit, so another tab or a refresh bypasses it. I left it unchanged; flag it if you want it per IP.
+Release sizes: v5–v12 show 0.0 MB versus 0.4 MB for v3–v4. That's on velixir's side, not the app.
+Changes in the tarball (full project, no deletions):
+
+Program.cs: adds AddDataProtection().UseEphemeralDataProtectionProvider(), which keeps keys in memory explicitly and skips the disk key-store warning. Also sets MaxBufferedUnacknowledgedRenderBatches = 2, down from 10, so slow or background tabs can't pile up queued clock renders.
+Zen.Blazor.csproj: adds System.GC.ConserveMemory=7 and TieredPGO=false.
+appsettings.json: turns off the Microsoft.AspNetCore.Antiforgery log category. Restarts stay visible as Application started lines from Hosting.Lifetime; search the logs for that to count them.
+MessageBoard.cs: truncates on grapheme boundaries using StringInfo.GetNextTextElementLength. This doesn't need ICU, so it's fine with invariant globalization.
+Home.razor.css: changes the status span to flex: 1 so the counter sits next to Send.
+README.md: updated to match.
+I couldn't build it here because the .NET feed is blocked from my sandbox, so run dotnet build before pushing. If it still crashes after this, the next lever is the DOTNET_GCHeapHardLimitPercent environment variable in velixir's Environment tab (hex value, e.g. 0x3C for 60%). That forces collections well before the container limit.
+
+
+Zen velixir run.tar
+GZ 
+
+
+
+
+
+Claude is AI and can make mistakes. Please double-check responses.
+
+
+
+

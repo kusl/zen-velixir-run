@@ -51,7 +51,18 @@ public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
 
         if (text.Length > MaxLength)
         {
-            var cut = char.IsHighSurrogate(text[MaxLength - 1]) ? MaxLength - 1 : MaxLength;
+            var cut = 0;
+            while (cut < text.Length)
+            {
+                var next = StringInfo.GetNextTextElementLength(text, cut);
+                if (cut + next > MaxLength)
+                {
+                    break;
+                }
+
+                cut += next;
+            }
+
             text = text[..cut].TrimEnd();
         }
 
