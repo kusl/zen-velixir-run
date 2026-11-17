@@ -62,3 +62,263 @@ Delivery
     No bespoke sed/patch scripts — full files only for anything that changes
     Docs updated alongside code changes
     Low verbosity, no code comments
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+The Beacons API, the `/beacons` page and the storage clean-up are written, but I couldn't compile or run the C#: this sandbox has no .NET SDK and can't reach NuGet. The SQL did run correctly against a local PostgreSQL 16 (schema, totals, per-referer and hourly counts, multi-key counts, and the size-based delete). Please build it once (`dotnet build` / `dotnet run --project Zen.Blazor`) before you push.
+
+Extract the archive at the repo root. It only contains files that changed or are new, and nothing needs deleting.
+
+**Changed:** `README.md`, `.github/workflows/velixir.yml`, `Zen.Blazor/Program.cs`, `Zen.Blazor/Zen.Blazor.csproj`, `Zen.Blazor/appsettings.json`, `Zen.Blazor/Components/_Imports.razor`, and `MainLayout.razor` plus its `.css` (adds a Beacons link).
+**New:** 16 files in `Zen.Blazor/Beacons/`, plus `Components/Pages/BeaconBoard.razor` and its `.css`.
+
+**Endpoints** (no authentication, CORS open):
+
+| Method | Path | What it does |
+|---|---|---|
+| POST | `/api/beacons/{key}` | Stores the request; returns 201 with a UUIDv7 id and a `Location` header |
+| GET | `/api/entries/{id}` | Returns everything recorded, or 404 if it's gone |
+| GET | `/api/beacons/{key}?referer=` | Totals, top referers, and hourly counts for the last 24 hours |
+| GET | `/api/beacons/{key}/entries` | Lists entries, newest first, with paging |
+| GET | `/api/beacons` | Busiest keys |
+| GET | `/api/status` | Database and memory health |
+
+**How it behaves:**
+- **Requests:** bodies can be up to 32 KiB. Headers, body, referer, user agent, method, path and query are recorded. IP addresses are cut to /24 (IPv4) or /48 (IPv6), and `Cookie`, `Authorization` and forwarding headers are blanked out, because everything stored is publicly readable.
+- **When the database is down:** writes land in a capped in-memory buffer (4 MiB) first, and a background writer saves them to Postgres in batches. If the database is down, reads use memory and say `degraded: true`. The writer keeps retrying, waiting longer each time up to 60 seconds. A lookup for an id that isn't in memory returns 503 with a `Retry-After` header instead of a false 404.
+- **Staying under the 256 MB disk:**
+  - Every 2 minutes, entries older than 30 days are deleted.
+  - If stored data passes 48 MiB, the oldest entries are removed until it's back to about 80% of that.
+  - If the whole database passes 160 MiB and is still growing, the 48 MiB limit is halved and the table is vacuumed.
+  - All of these limits are settings in `appsettings.json`.
+- **Connections:** each app instance opens at most 2 of the 5 database connections. It builds the connection from your `postgreshost`, `postgresport`, `postgresdatabase`, `postgresuser` and `postgrespassword` variables, and uses `postgresconnectionstring` only if those are missing. The table is created on first use.
+- **Limits:** each IP can make 30 writes and 120 reads per minute.
+- **Demo page:** `/beacons` counts visits, has four reaction buttons with live counts, and shows recent entries, top keys and copy-paste examples (curl, `sendBeacon`, CSP).
+- **CSP demo:** every page now sends a report-only Content Security Policy. Violation reports go to the key `zen-csp`, so they also count against the storage limits.
+
+**Upgrades:**
+- Added Dapper 2.1.89 and Npgsql 10.0.3, the latest stable versions. Npgsql 10 targets .NET 10. These are the first third-party packages in the project.
+- `actions/checkout@v7` was already the latest.
+- I added a build job (`actions/setup-dotnet@v6`) that must pass before deploy. Pull requests now build but don't deploy.
+- I removed the one comment that was in the workflow file.
+
+Sources:
+- [Npgsql on NuGet](https://www.nuget.org/packages/Npgsql)
+- [Dapper on NuGet](https://www.nuget.org/packages/Dapper)
+- [actions/checkout releases](https://github.com/actions/checkout/releases)
+- [actions/setup-dotnet releases](https://github.com/actions/setup-dotnet/releases)
+- [Dapper + Npgsql `ANY(@array)`](https://dev.to/ankursheel/how-to-write-a-query-with-the-in-operator-using-dapper-and-npgsql-4cg0)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Claude
+/
+Velixir says
+Env vars are injected at pod start. Save changes here and then redeploy this app to roll the new values out to every replica. Secret values are encrypted at rest and masked in this UI; to change one, just set it again. 
+I have added the following key value pairs in the dashboard for zen dot velixir dot run
+Key     Value     Type     Actions
+postgresconnectionstring     postgresql://{user}:{password}@{host}:{port}/{database}     
+postgresdatabase     {database}     
+postgreshost     {host}     
+postgrespassword     {password}     
+postgresport     {port}     
+postgresuser     {user}      
+some details about this database 
+it is on a free dev tier at clever-cloud dot com 
+it uses postgresql 18 
+it allows up to five connections 
+processor and memory are shared 
+disk size is 256MB 
+so you can imagine, very basic specs
+however, it still gives us enough to build a demo project 
+we will build a new set of web api endpoints 
+and a new page to show the results of this web api endpoints
+and to explain how to use the API endpoints 
+there is no authentication needed to use these endpoints
+the web api endpoint will accept http post 
+and return a uuid-v7 guid or something 
+and then the client will be able to get what they sent us with the guid with http get
+if it still exists with us otherwise they will get a 404 not found
+there should also be aggregate endpoints 
+where clients can get aggregate all the data they have sent us 
+based on their referer and their key
+it will record the header, body, referer, all the information that the client sends 
+and it presents it on the page 
+each post request has a very generoud body limit maybe 10k characters or something obscenely large
+the idea is to use this small database 
+but old data still gets removed 
+so we stay within the limits 
+and as always both the web api and the page should work somewhat even if the database connection is not working 
+we will lose state for some time but we should be back when the backend becomes available again 
+resilience is key 
+as for the uses of these new endpoints 
+think demonstrating analytics, csp report only, page visit count, page visitor reaction count, or anything else 
+somehow we also need to delete older entries as the database fills up before it is FULL 
+we are stuck with dotnet 10 for now so we have to use packages that work with dotnet 10 
+use dapper where necessary 
+avoid ef core 
+also there might be nuget packages and github actions 
+and other dependencies that we can upgrade to latest stable as well
+upgrade them all 
+as we do all of this 
+please be mindful to use best engineering practices 
+and solid principles 
+Use your best judgment
+If only a few files (under five or there about) need to change, give me the full path of the files that need to change and the FULL file 
+if there are a lot of files that need to change 
+Delivery
+    Whole project as one tar.gz, unambiguous file placement
+    do not include any file that has not changed 
+    Any files to delete on updates called out explicitly
+    No bespoke sed/patch scripts — full files only for anything that changes
+    Docs updated alongside code changes
+    Low verbosity, no code comments
+
+Created 27 files, ran 19 commands, and 14 more tools
+The Beacons API, the /beacons page and the storage clean-up are written, but I couldn’t compile or run the C#: this sandbox has no .NET SDK and can’t reach NuGet. The SQL did run correctly against a local PostgreSQL 16 (schema, totals, per-referer and hourly counts, multi-key counts, and the size-based delete). Please build it once (dotnet build / dotnet run --project Zen.Blazor) before you push.
+
+Extract the archive at the repo root. It only contains files that changed or are new, and nothing needs deleting.
+
+Changed: README.md, .github/workflows/velixir.yml, Zen.Blazor/Program.cs, Zen.Blazor/Zen.Blazor.csproj, Zen.Blazor/appsettings.json, Zen.Blazor/Components/_Imports.razor, and MainLayout.razor plus its .css (adds a Beacons link).
+New: 16 files in Zen.Blazor/Beacons/, plus Components/Pages/BeaconBoard.razor and its .css.
+
+Endpoints (no authentication, CORS open):
+
+Method	Path	What it does
+POST	/api/beacons/{key}	Stores the request; returns 201 with a UUIDv7 id and a Location header
+GET	/api/entries/{id}	Returns everything recorded, or 404 if it’s gone
+GET	/api/beacons/{key}?referer=	Totals, top referers, and hourly counts for the last 24 hours
+GET	/api/beacons/{key}/entries	Lists entries, newest first, with paging
+GET	/api/beacons	Busiest keys
+GET	/api/status	Database and memory health
+How it behaves:
+
+Requests: bodies can be up to 32 KiB. Headers, body, referer, user agent, method, path and query are recorded. IP addresses are cut to /24 (IPv4) or /48 (IPv6), and Cookie, Authorization and forwarding headers are blanked out, because everything stored is publicly readable.
+When the database is down: writes land in a capped in-memory buffer (4 MiB) first, and a background writer saves them to Postgres in batches. If the database is down, reads use memory and say degraded: true. The writer keeps retrying, waiting longer each time up to 60 seconds. A lookup for an id that isn’t in memory returns 503 with a Retry-After header instead of a false 404.
+Staying under the 256 MB disk:
+Every 2 minutes, entries older than 30 days are deleted.
+If stored data passes 48 MiB, the oldest entries are removed until it’s back to about 80% of that.
+If the whole database passes 160 MiB and is still growing, the 48 MiB limit is halved and the table is vacuumed.
+All of these limits are settings in appsettings.json.
+Connections: each app instance opens at most 2 of the 5 database connections. It builds the connection from your postgreshost, postgresport, postgresdatabase, postgresuser and postgrespassword variables, and uses postgresconnectionstring only if those are missing. The table is created on first use.
+Limits: each IP can make 30 writes and 120 reads per minute.
+Demo page: /beacons counts visits, has four reaction buttons with live counts, and shows recent entries, top keys and copy-paste examples (curl, sendBeacon, CSP).
+CSP demo: every page now sends a report-only Content Security Policy. Violation reports go to the key zen-csp, so they also count against the storage limits.
+Upgrades:
+
+Added Dapper 2.1.89 and Npgsql 10.0.3, the latest stable versions. Npgsql 10 targets .NET 10. These are the first third-party packages in the project.
+actions/checkout@v7 was already the latest.
+I added a build job (actions/setup-dotnet@v6) that must pass before deploy. Pull requests now build but don’t deploy.
+I removed the one comment that was in the workflow file.
+Sources:
+
+Npgsql on NuGet
+Dapper on NuGet
+actions/checkout releases
+actions/setup-dotnet releases
+Dapper + Npgsql ANY(@array)
+
+Zen velixir run beacons.tar
+GZ 
+
+Memory updated. View memory
+Automatically approve is on. Claude runs on its own and pauses if anything looks unsafe. This includes using your connectors and Claude in Chrome, unless you turn them off. Learn more
+
+
+Claude finished the response
+
+zen-velixir-run-beacons.tar.gz
+
+zen-velixir-run
+1 document read
+Web search
+
+12
+64

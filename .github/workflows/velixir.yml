@@ -3,14 +3,29 @@ name: Deploy to velixir
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    # One deploy at a time: a push that lands mid-deploy waits for the one before it.
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build zen-velixir-run.slnx -c Release
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
     concurrency:
       group: velixir-deploy
       cancel-in-progress: false

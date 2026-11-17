@@ -1,0 +1,241 @@
+@page "/beacons"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject BeaconService Service
+@inject BeaconBuffer Buffer
+@inject BeaconCapture Capture
+@inject NavigationManager Navigation
+
+<PageTitle>Beacons · Zen</PageTitle>
+
+<h1>Beacons</h1>
+<p class="lede">
+    POST anything to a key, get a UUIDv7 back, read it later. No sign-up, no auth.
+    Everything sent here is public, IPs are truncated, and the oldest data is deleted to fit a tiny database.
+</p>
+
+<section class="live">
+    <div class="tiles">
+        <div class="tile">
+            <span class="value">@Count(VisitKey)</span>
+            <span class="label">page visits</span>
+        </div>
+        @foreach (var reaction in Reactions)
+        {
+            <button type="button" class="tile react" @key="reaction.Key" title="@reaction.Name"
+                    disabled="@(!RendererInfo.IsInteractive)" @onclick="() => React(reaction)">
+                <span class="value">@reaction.Emoji @Count(reaction.Key)</span>
+                <span class="label">@reaction.Name</span>
+            </button>
+        }
+    </div>
+    <p class="status" role="status">
+        <span class="dot @StatusClass"></span>
+        @StatusText
+        @if (_message is not null)
+        {
+            <span class="note">@_message</span>
+        }
+    </p>
+</section>
+
+<section>
+    <h2>Recent</h2>
+    @if (_overview is null || _overview.Recent.Count == 0)
+    {
+        <p class="empty">Nothing yet.</p>
+    }
+    else
+    {
+        <ol class="feed">
+            @foreach (var item in _overview.Recent)
+            {
+                <li @key="item.Id">
+                    <div class="meta">
+                        <time datetime="@item.ReceivedAt.ToString("O")">@item.ReceivedAt.ToString("yyyy-MM-dd HH:mm:ss")</time>
+                        <a href="@($"api/beacons/{Uri.EscapeDataString(item.Key)}")" target="_blank">@item.Key</a>
+                        <span>@Bytes(item.Size)</span>
+                        <a href="@($"api/entries/{item.Id}")" target="_blank">json</a>
+                    </div>
+                    @if (item.Referer.Length > 0)
+                    {
+                        <div class="referer">@item.Referer</div>
+                    }
+                    @if (item.Preview.Length > 0)
+                    {
+                        <code>@item.Preview</code>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+<section>
+    <h2>Top keys</h2>
+    @if (_overview is null || _overview.TopKeys.Count == 0)
+    {
+        <p class="empty">No keys yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Key</th><th class="num">Beacons</th></tr></thead>
+            <tbody>
+                @foreach (var key in _overview.TopKeys)
+                {
+                    <tr @key="key.Key">
+                        <td><a href="@($"api/beacons/{Uri.EscapeDataString(key.Key)}")" target="_blank">@key.Key</a></td>
+                        <td class="num">@key.Count.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section>
+    <h2>API</h2>
+    <p>
+        Keys are 1–64 characters: letters, digits, <code>. _ ~ : -</code>, starting with a letter or digit.
+        Bodies up to @Bytes(Capture.MaxBodyBytes), any content type; non-UTF-8 bodies are stored as base64.
+        CORS is open. Writes are limited per IP. <code>Cookie</code>, <code>Authorization</code> and forwarding headers are redacted.
+    </p>
+    <table class="endpoints">
+        <thead><tr><th>Method</th><th>Path</th><th>Returns</th></tr></thead>
+        <tbody>
+            <tr><td>POST</td><td><code>/api/beacons/{key}</code></td><td>201, id and <code>Location</code></td></tr>
+            <tr><td>GET</td><td><code>/api/entries/{id}</code></td><td>Everything recorded, or 404</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons/{key}?referer=</code></td><td>Totals, by referer, hourly for 24 h</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons/{key}/entries?referer=&amp;before=&amp;limit=</code></td><td>Newest first, <code>next</code> cursor</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons?limit=</code></td><td>Busiest keys</td></tr>
+            <tr><td>GET</td><td><code>/api/status</code></td><td>Storage health</td></tr>
+        </tbody>
+    </table>
+    <p>
+        Responses carry <code>degraded: true</code> when the database is unreachable and only recent in-memory data is used.
+        A lookup that misses memory during an outage returns 503 with <code>Retry-After</code>.
+    </p>
+
+    @foreach (var example in _examples)
+    {
+        <h3>@example.Title</h3>
+        <pre><code>@example.Code</code></pre>
+    }
+</section>
+
+@code {
+    private const string VisitKey = "zen-visits";
+    private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(1);
+
+    private static readonly Reaction[] Reactions =
+    [
+        new("zen-reaction-like", "👍", "like"),
+        new("zen-reaction-love", "❤️", "love"),
+        new("zen-reaction-party", "🎉", "party"),
+        new("zen-reaction-think", "🤔", "hmm"),
+    ];
+
+    private static readonly string[] CountKeys = [VisitKey, .. Reactions.Select(r => r.Key)];
+
+    private readonly CancellationTokenSource _cts = new();
+    private BeaconOverview? _overview;
+    private IReadOnlyList<BeaconExample> _examples = [];
+    private string? _message;
+    private DateTimeOffset _lastReaction;
+    private int _refreshQueued;
+
+    private string StatusClass => _overview?.Status.Database switch
+    {
+        "connected" => "ok",
+        "memory-only" or "connecting" => "warn",
+        _ => "bad",
+    };
+
+    private string StatusText
+    {
+        get
+        {
+            if (_overview is not { Status: var s })
+            {
+                return "Loading…";
+            }
+
+            var stored = s.StoredBytes is { } b ? $"{Bytes(b)} of {Bytes(s.BudgetBytes)} budget" : "size pending";
+            return s.Database switch
+            {
+                "connected" => $"Database connected · {stored} · {s.Unsaved} unsaved in memory",
+                "memory-only" => $"No database configured · {s.MemoryEntries} beacons in memory",
+                "connecting" => $"Connecting to database · {s.Unsaved} unsaved in memory",
+                _ => $"Database unavailable · serving {s.MemoryEntries} beacons from memory, {s.Unsaved} waiting to save",
+            };
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _examples = BeaconExample.For(Navigation.BaseUri.TrimEnd('/'));
+
+        if (RendererInfo.IsInteractive)
+        {
+            Service.Accept(Capture.FromPage(VisitKey, Navigation.Uri, "visit"));
+            Buffer.Changed += OnBufferChanged;
+        }
+
+        _overview = await Service.GetOverviewAsync(CountKeys, RendererInfo.IsInteractive, _cts.Token);
+    }
+
+    private long Count(string key) => _overview?.Counts.GetValueOrDefault(key) ?? 0;
+
+    private async Task React(Reaction reaction)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastReaction < Cooldown)
+        {
+            _message = "Easy, one per second.";
+            return;
+        }
+
+        _lastReaction = now;
+        _message = null;
+        Service.Accept(Capture.FromPage(reaction.Key, Navigation.Uri, reaction.Name));
+        _overview = await Service.GetOverviewAsync(CountKeys, true, _cts.Token);
+    }
+
+    private void OnBufferChanged()
+    {
+        if (Interlocked.Exchange(ref _refreshQueued, 1) == 1)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), _cts.Token);
+                Volatile.Write(ref _refreshQueued, 0);
+                _overview = await Service.GetOverviewAsync(CountKeys, false, _cts.Token);
+                StateHasChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+    }
+
+    private static string Bytes(long value) => value switch
+    {
+        < 1024 => $"{value} B",
+        < 1024 * 1024 => $"{value / 1024.0:0.#} KB",
+        _ => $"{value / (1024.0 * 1024):0.#} MB",
+    };
+
+    public void Dispose()
+    {
+        Buffer.Changed -= OnBufferChanged;
+        _cts.Cancel();
+    }
+
+    private sealed record Reaction(string Key, string Emoji, string Name);
+}

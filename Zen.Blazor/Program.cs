@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Zen.Blazor.Beacons;
 using Zen.Blazor.Components;
 using Zen.Blazor.Services;
 
@@ -22,6 +23,7 @@ builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 builder.Services.AddSingleton<MessageBoard>();
 builder.Services.AddSingleton<ClockService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
+builder.Services.AddBeacons(builder.Configuration);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(o =>
@@ -42,9 +44,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseBeacons();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapBeaconEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

@@ -1,0 +1,178 @@
+h1 {
+    margin: .5rem 0 .5rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+h2 {
+    margin: 2rem 0 .75rem;
+    font-size: 1.15rem;
+}
+
+h3 {
+    margin: 1.25rem 0 .4rem;
+    font-size: .95rem;
+}
+
+.lede {
+    margin: 0 0 1.25rem;
+    color: var(--muted);
+}
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: .5rem;
+}
+
+.tile {
+    display: grid;
+    gap: .15rem;
+    padding: .75rem;
+    border: 1px solid var(--line);
+    border-radius: .5rem;
+    background: var(--surface);
+    text-align: center;
+}
+
+.react {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.react:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.react:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.react:disabled {
+    cursor: default;
+}
+
+.value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.label {
+    color: var(--muted);
+    font-size: .8rem;
+}
+
+.status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .75rem 0 0;
+    color: var(--muted);
+    font-size: .85rem;
+}
+
+.dot {
+    width: .6rem;
+    height: .6rem;
+    border-radius: 50%;
+    background: var(--muted);
+}
+
+.dot.ok {
+    background: #2e9d5b;
+}
+
+.dot.warn {
+    background: #d9a400;
+}
+
+.dot.bad {
+    background: var(--danger);
+}
+
+.note {
+    color: var(--fg);
+}
+
+.empty {
+    color: var(--muted);
+}
+
+.feed {
+    display: grid;
+    gap: .5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.feed li {
+    display: grid;
+    gap: .2rem;
+    min-width: 0;
+    padding: .5rem .75rem;
+    border-left: 3px solid var(--accent);
+    border-radius: .25rem;
+    background: var(--surface);
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem .75rem;
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.meta time,
+.meta span,
+.referer {
+    color: var(--muted);
+}
+
+.referer {
+    font-size: .8rem;
+    overflow-wrap: anywhere;
+}
+
+.feed code {
+    font-size: .8rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+th,
+td {
+    padding: .35rem .5rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+td code {
+    overflow-wrap: anywhere;
+}
+
+.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+pre {
+    margin: 0;
+    padding: .75rem;
+    border-radius: .5rem;
+    background: var(--surface);
+    overflow-x: auto;
+    font-size: .8rem;
+}
