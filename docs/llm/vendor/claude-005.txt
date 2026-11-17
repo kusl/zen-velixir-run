@@ -442,6 +442,50 @@ Web search
 08:49:45.221b9-6dvnb at Zen.Blazor.Beacons.PostgresBeaconStore.OpenAsync(CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/PostgresBeaconStore.cs:line 277
 08:49:45.221b9-6dvnb at Zen.Blazor.Beacons.PostgresBeaconStore.CountAsync(IReadOnlyCollection`1 keys, CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/PostgresBeaconStore.cs:line 216
 08:49:45.221b9-6dvnb at Zen.Blazor.Beacons.BeaconService.TryStoreAsync[T](Func`2 operation, CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/BeaconService.cs:line 191
+08:54:23.432c8-cn4g7warn: Microsoft.AspNetCore.DataProtection.KeyManagement.XmlKeyManager[35]
+08:54:23.432c8-cn4g7 No XML encryptor configured. Key {e88d22a5-6d4a-4a48-b0c7-096d421a1fdc} may be persisted to storage in unencrypted form.
+08:54:23.432c8-cn4g7warn: Microsoft.AspNetCore.Hosting.Diagnostics[15]
+08:54:23.432c8-cn4g7 Overriding HTTP_PORTS '8080' and HTTPS_PORTS ''. Binding to values defined by URLS instead 'http://+:8080'.
+08:54:23.432c8-cn4g7warn: Microsoft.AspNetCore.Server.Kestrel[0]
+08:54:23.432c8-cn4g7 Overriding address(es) 'http://+:8080'. Binding to endpoints defined via IConfiguration and/or UseKestrel() instead.
+08:54:23.432c8-cn4g7info: Microsoft.Hosting.Lifetime[14]
+08:54:23.432c8-cn4g7 Now listening on: http://[::]:8080
+08:54:23.432c8-cn4g7info: Microsoft.Hosting.Lifetime[0]
+08:54:23.432c8-cn4g7 Application started. Press Ctrl+C to shut down.
+08:54:23.432c8-cn4g7info: Microsoft.Hosting.Lifetime[0]
+08:54:23.432c8-cn4g7 Hosting environment: Production
+08:54:23.432c8-cn4g7info: Microsoft.Hosting.Lifetime[0]
+08:54:23.433c8-cn4g7 Content root path: /app/out
+08:54:23.433c8-cn4g7warn: Zen.Blazor.Beacons.DatabaseCircuit[0]
+08:54:23.433c8-cn4g7 Database unavailable; serving from memory, retrying in 00:00:02
+08:54:23.433c8-cn4g7 Npgsql.NpgsqlException (0x80004005): Failed to connect to [2600:1f16:12b2:b40a:533d:22ad:38c2:f393]:5432
+08:54:23.433c8-cn4g7 ---> System.Net.Sockets.SocketException (101): Network is unreachable
+08:54:23.455c8-cn4g7 at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.CreateException(SocketError error, Boolean forAsyncThrow)
+08:54:23.455c8-cn4g7 at System.Net.Sockets.Socket.AwaitableSocketAsyncEventArgs.ConnectAsync(Socket socket, CancellationToken cancellationToken)
+08:54:23.455c8-cn4g7 at System.Net.Sockets.Socket.ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
+08:54:23.455c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.ConnectAsync(NpgsqlTimeout timeout, CancellationToken cancellationToken)
+08:54:23.455c8-cn4g7 at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.ExecutionContextCallback(Object s)
+08:54:23.455c8-cn4g7 at System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state)
+08:54:23.455c8-cn4g7 at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext(Thread threadPoolThread)
+08:54:23.455c8-cn4g7 at System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1.AsyncStateMachineBox`1.MoveNext()
+08:54:23.455c8-cn4g7 at System.Net.Sockets.SocketAsyncContext.ConnectOperation.InvokeCallback(Boolean allowPooling)
+08:54:23.455c8-cn4g7 at System.Threading.ThreadPoolWorkQueue.Dispatch()
+08:54:23.455c8-cn4g7 at System.Threading.PortableThreadPool.WorkerThread.WorkerThreadStart()
+08:54:23.455c8-cn4g7 at System.Threading.Thread.StartCallback()
+08:54:23.456c8-cn4g7 --- End of stack trace from previous location ---
+08:54:23.456c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.ConnectAsync(NpgsqlTimeout timeout, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.ConnectAsync(NpgsqlTimeout timeout, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.RawOpen(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.<Open>g__OpenCore|209_0(NpgsqlConnector conn, String username, SslMode sslMode, GssEncryptionMode gssEncMode, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.Internal.NpgsqlConnector.Open(NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.PoolingDataSource.OpenNewConnector(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.PoolingDataSource.<Get>g__RentAsync|33_0(NpgsqlConnection conn, NpgsqlTimeout timeout, Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.NpgsqlConnection.<Open>g__OpenAsync|42_0(Boolean async, CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.NpgsqlDataSource.OpenConnectionAsync(CancellationToken cancellationToken)
+08:54:23.456c8-cn4g7 at Npgsql.NpgsqlDataSource.OpenConnectionAsync(CancellationToken cancellationToken)
+08:54:23.457c8-cn4g7 at Zen.Blazor.Beacons.PostgresBeaconStore.OpenAsync(CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/PostgresBeaconStore.cs:line 277
+08:54:23.457c8-cn4g7 at Zen.Blazor.Beacons.PostgresBeaconStore.CountAsync(IReadOnlyCollection`1 keys, CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/PostgresBeaconStore.cs:line 216
+08:54:23.457c8-cn4g7 at Zen.Blazor.Beacons.BeaconService.TryStoreAsync[T](Func`2 operation, CancellationToken cancellationToken) in /app/Zen.Blazor/Beacons/BeaconService.cs:line 191
 
 
 
@@ -454,47 +498,7 @@ Web search
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+It isn't working like I expected. 
+I even tried switching out the credentials for neon dot tech 
+but that didn't resolve it 
+please review 
