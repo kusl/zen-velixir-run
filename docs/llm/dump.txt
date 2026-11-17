@@ -1,8 +1,8 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-11-17 06:56:22
+Generated (UTC): 2026-11-17 07:02:08
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      a7720b47226d8b59412a01f7cf3a1af46a91a2ef
+Git Commit:      c312ebf008d7004ebdc3db2808fd4875fdba9373
 Git Branch:      main
 Git Dirty:       no
 .NET SDK:        11.0.100-rc.3.26522.148
@@ -1321,14 +1321,14 @@ public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
 FILE:     Zen.Blazor/Zen.Blazor.csproj
 SIZE:     0.68 KB (698 bytes)
 LINES:    19
-SHA256:   d73dda18c6f54dcc664fbfbd3613306cd72f6194291fe8a3bd7a2f390159aef8
-MODIFIED: 2026-11-17 06:54:48 (UTC)
+SHA256:   b58940280332b6a5557d4c331b9db5cc90fbc1b9271be09d0ff5dcce31ba7a11
+MODIFIED: 2026-11-17 07:01:52 (UTC)
 ================================================================================
 
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
@@ -1707,9 +1707,9 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-11-17 06:56:22
+EXPORT COMPLETED (UTC): 2026-11-17 07:02:08
 Total Files Exported:   25
 Total Source Size:      0.03 MB (32965 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): d60d58e89abfb74a07fa4b5a39992f51c071bab4cfd3b3894189ea9b80e21c97
+DUMP SHA256 (of all lines above this one): d16a6905c00b8bfb101e5944680d38cca3db6e7d2462e4b718244d98f8ebe837

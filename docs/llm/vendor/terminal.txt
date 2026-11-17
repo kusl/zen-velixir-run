@@ -37,4 +37,43 @@ Total source size: 0.03 MB across 25 files
 real	0m0.393s
 user	0m0.172s
 sys	0m0.277s
+kushal@fedora:~/src/dotnet/zen-velixir-run$ cd /home/kushal/src/dotnet/zen-velixir-run/; time bash /home/kushal/src/dotnet/zen-velixir-run/export.sh
+Starting project export...
+Project Path: /home/kushal/src/dotnet/zen-velixir-run
+Output File:  /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
+Listing files via git...
+Found 25 files to export
+Processing (1/25): .github/workflows/velixir.yml
+Processing (2/25): .gitignore
+Processing (3/25): README.md
+Processing (4/25): Zen.Blazor/Components/App.razor
+Processing (5/25): Zen.Blazor/Components/Layout/MainLayout.razor
+Processing (6/25): Zen.Blazor/Components/Layout/MainLayout.razor.css
+Processing (7/25): Zen.Blazor/Components/Layout/ServerClock.razor
+Processing (8/25): Zen.Blazor/Components/Layout/ServerClock.razor.css
+Processing (9/25): Zen.Blazor/Components/Pages/Error.razor
+Processing (10/25): Zen.Blazor/Components/Pages/Error.razor.css
+Processing (11/25): Zen.Blazor/Components/Pages/Home.razor
+Processing (12/25): Zen.Blazor/Components/Pages/Home.razor.css
+Processing (13/25): Zen.Blazor/Components/Pages/NotFound.razor
+Processing (14/25): Zen.Blazor/Components/Routes.razor
+Processing (15/25): Zen.Blazor/Components/_Imports.razor
+Processing (16/25): Zen.Blazor/Program.cs
+Processing (17/25): Zen.Blazor/Properties/launchSettings.json
+Processing (18/25): Zen.Blazor/Services/ClockService.cs
+Processing (19/25): Zen.Blazor/Services/MessageBoard.cs
+Processing (20/25): Zen.Blazor/Zen.Blazor.csproj
+Processing (21/25): Zen.Blazor/appsettings.Development.json
+Processing (22/25): Zen.Blazor/appsettings.json
+Processing (23/25): Zen.Blazor/wwwroot/app.css
+Processing (24/25): export.sh
+Processing (25/25): zen-velixir-run.slnx
+
+Export completed successfully!
+Output file: /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
+Total source size: 0.03 MB across 25 files
+
+real	0m0.382s
+user	0m0.204s
+sys	0m0.240s
 kushal@fedora:~/src/dotnet/zen-velixir-run$ 
