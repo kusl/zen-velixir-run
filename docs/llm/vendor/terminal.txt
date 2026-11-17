@@ -76,4 +76,63 @@ Total source size: 0.03 MB across 25 files
 real	0m0.382s
 user	0m0.204s
 sys	0m0.240s
+kushal@fedora:~/src/dotnet/zen-velixir-run$ cd /home/kushal/src/dotnet/zen-velixir-run/; time bash /home/kushal/src/dotnet/zen-velixir-run/export.sh
+Starting project export...
+Project Path: /home/kushal/src/dotnet/zen-velixir-run
+Output File:  /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
+Listing files via git...
+Found 45 files to export
+Processing (1/45): .github/workflows/velixir.yml
+Processing (2/45): .gitignore
+Processing (3/45): README.md
+Processing (4/45): Zen.Blazor/Beacons/BeaconBuffer.cs
+Processing (5/45): Zen.Blazor/Beacons/BeaconCapture.cs
+Processing (6/45): Zen.Blazor/Beacons/BeaconEndpoints.cs
+Processing (7/45): Zen.Blazor/Beacons/BeaconExample.cs
+Processing (8/45): Zen.Blazor/Beacons/BeaconIds.cs
+Processing (9/45): Zen.Blazor/Beacons/BeaconJanitor.cs
+Processing (10/45): Zen.Blazor/Beacons/BeaconJsonContext.cs
+Processing (11/45): Zen.Blazor/Beacons/BeaconKey.cs
+Processing (12/45): Zen.Blazor/Beacons/BeaconModels.cs
+Processing (13/45): Zen.Blazor/Beacons/BeaconOptions.cs
+Processing (14/45): Zen.Blazor/Beacons/BeaconService.cs
+Processing (15/45): Zen.Blazor/Beacons/BeaconSetup.cs
+Processing (16/45): Zen.Blazor/Beacons/BeaconWriter.cs
+Processing (17/45): Zen.Blazor/Beacons/DatabaseCircuit.cs
+Processing (18/45): Zen.Blazor/Beacons/IBeaconStore.cs
+Processing (19/45): Zen.Blazor/Beacons/NullBeaconStore.cs
+Processing (20/45): Zen.Blazor/Beacons/PostgresBeaconStore.cs
+Processing (21/45): Zen.Blazor/Beacons/PostgresSettings.cs
+Processing (22/45): Zen.Blazor/Components/App.razor
+Processing (23/45): Zen.Blazor/Components/Layout/MainLayout.razor
+Processing (24/45): Zen.Blazor/Components/Layout/MainLayout.razor.css
+Processing (25/45): Zen.Blazor/Components/Layout/ServerClock.razor
+Processing (26/45): Zen.Blazor/Components/Layout/ServerClock.razor.css
+Processing (27/45): Zen.Blazor/Components/Pages/BeaconBoard.razor
+Processing (28/45): Zen.Blazor/Components/Pages/BeaconBoard.razor.css
+Processing (29/45): Zen.Blazor/Components/Pages/Error.razor
+Processing (30/45): Zen.Blazor/Components/Pages/Error.razor.css
+Processing (31/45): Zen.Blazor/Components/Pages/Home.razor
+Processing (32/45): Zen.Blazor/Components/Pages/Home.razor.css
+Processing (33/45): Zen.Blazor/Components/Pages/NotFound.razor
+Processing (34/45): Zen.Blazor/Components/Routes.razor
+Processing (35/45): Zen.Blazor/Components/_Imports.razor
+Processing (36/45): Zen.Blazor/Program.cs
+Processing (37/45): Zen.Blazor/Properties/launchSettings.json
+Processing (38/45): Zen.Blazor/Services/ClockService.cs
+Processing (39/45): Zen.Blazor/Services/MessageBoard.cs
+Processing (40/45): Zen.Blazor/Zen.Blazor.csproj
+Processing (41/45): Zen.Blazor/appsettings.Development.json
+Processing (42/45): Zen.Blazor/appsettings.json
+Processing (43/45): Zen.Blazor/wwwroot/app.css
+Processing (44/45): export.sh
+Processing (45/45): zen-velixir-run.slnx
+
+Export completed successfully!
+Output file: /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
+Total source size: 0.11 MB across 45 files
+
+real	0m0.664s
+user	0m0.316s
+sys	0m0.454s
 kushal@fedora:~/src/dotnet/zen-velixir-run$ 

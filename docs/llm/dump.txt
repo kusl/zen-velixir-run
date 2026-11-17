@@ -1,12 +1,12 @@
 ===============================================================================
 PROJECT EXPORT
-Generated (UTC): 2026-11-17 07:02:08
+Generated (UTC): 2026-11-17 08:16:28
 Project Path:    /home/kushal/src/dotnet/zen-velixir-run
-Git Commit:      c312ebf008d7004ebdc3db2808fd4875fdba9373
+Git Commit:      a9a012e799938e84be0f395622b820cf14e8e819
 Git Branch:      main
 Git Dirty:       no
 .NET SDK:        11.0.100-rc.3.26522.148
-Files Exported:  25
+Files Exported:  45
 ===============================================================================
 
 DIRECTORY STRUCTURE (exported files only):
@@ -19,6 +19,25 @@ DIRECTORY STRUCTURE (exported files only):
     .gitignore
     README.md
     Zen.Blazor/
+        Beacons/
+            BeaconBuffer.cs
+            BeaconCapture.cs
+            BeaconEndpoints.cs
+            BeaconExample.cs
+            BeaconIds.cs
+            BeaconJanitor.cs
+            BeaconJsonContext.cs
+            BeaconKey.cs
+            BeaconModels.cs
+            BeaconOptions.cs
+            BeaconService.cs
+            BeaconSetup.cs
+            BeaconWriter.cs
+            DatabaseCircuit.cs
+            IBeaconStore.cs
+            NullBeaconStore.cs
+            PostgresBeaconStore.cs
+            PostgresSettings.cs
         Components/
             App.razor
             Layout/
@@ -27,6 +46,8 @@ DIRECTORY STRUCTURE (exported files only):
                 ServerClock.razor
                 ServerClock.razor.css
             Pages/
+                BeaconBoard.razor
+                BeaconBoard.razor.css
                 Error.razor
                 Error.razor.css
                 Home.razor
@@ -54,10 +75,10 @@ FILE CONTENTS:
 
 ================================================================================
 FILE:     .github/workflows/velixir.yml
-SIZE:     0.93 KB (948 bytes)
-LINES:    34
-SHA256:   933d3c891d8ccd3640a9b4927f40698bc3736121061101bb19b6dda010db2a6e
-MODIFIED: 2026-10-05 09:30:05 (UTC)
+SIZE:     1.17 KB (1199 bytes)
+LINES:    49
+SHA256:   e4e33e1b49660372cd4eeae6ad0e9b56a661b0477a25fc47643ef0087c1fea95
+MODIFIED: 2026-11-17 07:48:30 (UTC)
 ================================================================================
 
 name: Deploy to velixir
@@ -65,14 +86,29 @@ name: Deploy to velixir
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    # One deploy at a time: a push that lands mid-deploy waits for the one before it.
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build zen-velixir-run.slnx -c Release
+
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
     concurrency:
       group: velixir-deploy
       cancel-in-progress: false
@@ -590,10 +626,10 @@ $RECYCLE.BIN/
 
 ================================================================================
 FILE:     README.md
-SIZE:     1.11 KB (1132 bytes)
-LINES:    18
-SHA256:   1969b23e83bf8d76363cf2711ee9110a0bbf962ed9315ecb540b197dfe8dfea1
-MODIFIED: 2026-10-05 09:30:20 (UTC)
+SIZE:     3.00 KB (3076 bytes)
+LINES:    41
+SHA256:   038be651ae126ff63006ebe2f168310f3645772be3a70f4d1e87c2b276401df4
+MODIFIED: 2026-11-17 07:50:05 (UTC)
 ================================================================================
 
 # zen-velixir-run
@@ -602,18 +638,2199 @@ Minimal .NET 10 Blazor Server app on the [velixir](https://zen.velixir.run/) fre
 
 - Live message board: anyone posts up to 500 chars, everyone connected sees it instantly. In memory only, newest 50 kept, 2 s per-visitor cooldown.
 - Header shows server time, ticking every second from one shared server timer.
-- No third-party packages, CSS or JS. Evergreen browsers only.
+- Beacons (`/beacons`): public, unauthenticated capture API with a live page and usage docs. See below.
+- Packages: Dapper and Npgsql only. No CSS or JS frameworks. Evergreen browsers only.
 - Component styles in `*.razor.css`; globals and color tokens (`light-dark()`) in `wwwroot/app.css`.
 - Binds to `PORT` when set; honors `X-Forwarded-For`/`X-Forwarded-Proto` from the edge.
 - Memory cap: workstation non-concurrent GC, `ConserveMemory=7`, no tiered PGO, invariant globalization, short disconnected-circuit retention, 2 unacked render batches per circuit.
 - Data protection keys are in-memory; a restart invalidates antiforgery cookies, so that log category is off. Restarts show as `Application started` in logs.
 - Messages truncate on grapheme boundaries.
-- Push to `main` deploys via `.github/workflows/velixir.yml` (secret `VELIXIR_API_KEY`).
+- Every page sends `Content-Security-Policy-Report-Only`; reports land in beacon key `zen-csp`.
+- Push to `main` builds then deploys via `.github/workflows/velixir.yml` (secret `VELIXIR_API_KEY`). PRs build only.
+
+## Beacons
+
+| Method | Path | Result |
+|---|---|---|
+| POST | `/api/beacons/{key}` | 201, UUIDv7 id, `Location` |
+| GET | `/api/entries/{id}` | Full record or 404; 503 + `Retry-After` if DB down and not in memory |
+| GET | `/api/beacons/{key}?referer=` | Total, bytes, first/last, top 25 referers, hourly 24 h |
+| GET | `/api/beacons/{key}/entries?referer=&before=&limit=` | Newest first, max 100, `next` cursor |
+| GET | `/api/beacons?limit=` | Busiest keys |
+| GET | `/api/status` | Storage health |
+
+- Key: `^[A-Za-z0-9][A-Za-z0-9._~:-]{0,63}$`. Body ≤ 32 KiB, any type; invalid UTF-8 or NUL stored as base64.
+- Records method, path, query, referer (`Referer` else `Origin`), content type, user agent, headers, body. IP truncated to /24 or /48. `Cookie`, `Authorization` and forwarding headers redacted.
+- Open CORS. Per-IP token buckets: 30 writes/min, 120 reads/min.
+- Writes go to a bounded memory buffer (4 MiB / 2000 entries) and a background writer batches them into PostgreSQL. DB down: reads serve memory with `degraded: true`, writer retries with backoff (2–60 s), oldest unsaved entries drop if the buffer fills.
+- Janitor every 2 min: deletes entries older than 30 days, trims oldest to 80% when stored bytes exceed 48 MiB, halves the budget and vacuums if `pg_database_size` exceeds 160 MiB and is still growing.
+- Pool max 2 connections (server allows 5). Schema is created on first use.
+- No PostgreSQL settings: memory only.
+
+Settings in `appsettings.json` under `Beacons`. Connection from env vars `postgreshost`, `postgresport`, `postgresdatabase`, `postgresuser`, `postgrespassword`, or `postgresconnectionstring` (`postgresql://user:pass@host:port/db`) as fallback.
 
 ```
 dotnet run --project Zen.Blazor
 ./export.sh
 ```
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconBuffer.cs
+SIZE:     4.23 KB (4330 bytes)
+LINES:    173
+SHA256:   b2376c739d46655252f6042872d81127748bf0bc427d65228ccfcacd5ab0144f
+MODIFIED: 2026-11-17 07:43:11 (UTC)
+================================================================================
+
+using Microsoft.Extensions.Options;
+
+namespace Zen.Blazor.Beacons;
+
+public readonly record struct BufferedBeacon(BeaconEntry Entry, bool Persisted);
+
+public readonly record struct BufferStats(int Entries, long Bytes, int Unsaved, long Dropped);
+
+public sealed class BeaconBuffer(IOptions<BeaconOptions> options, ILogger<BeaconBuffer> logger)
+{
+    private readonly BeaconOptions _options = options.Value;
+    private readonly Lock _gate = new();
+    private readonly LinkedList<Slot> _order = new();
+    private readonly Dictionary<Guid, LinkedListNode<Slot>> _index = [];
+    private readonly SemaphoreSlim _signal = new(0, 1);
+    private long _bytes;
+    private int _unsaved;
+    private long _dropped;
+
+    public event Action? Changed;
+
+    public void Add(BeaconEntry entry)
+    {
+        lock (_gate)
+        {
+            _index[entry.Id] = _order.AddLast(new Slot(entry));
+            _bytes += entry.Size;
+            _unsaved++;
+
+            while (_order.First is { } oldest && oldest != _order.Last
+                   && (_bytes > _options.MemoryBytes || _order.Count > _options.MemoryEntries))
+            {
+                Remove(oldest);
+                if (!oldest.Value.Persisted)
+                {
+                    _unsaved--;
+                    _dropped++;
+                }
+            }
+        }
+
+        Signal();
+        Notify();
+    }
+
+    public bool TryGet(Guid id, out BeaconEntry entry)
+    {
+        lock (_gate)
+        {
+            if (_index.TryGetValue(id, out var node))
+            {
+                entry = node.Value.Entry;
+                return true;
+            }
+        }
+
+        entry = null!;
+        return false;
+    }
+
+    public IReadOnlyList<BeaconEntry> TakeUnsaved(int max)
+    {
+        var batch = new List<BeaconEntry>(Math.Min(max, 64));
+        lock (_gate)
+        {
+            for (var node = _order.First; node is not null && batch.Count < max; node = node.Next)
+            {
+                if (!node.Value.Persisted)
+                {
+                    batch.Add(node.Value.Entry);
+                }
+            }
+        }
+
+        return batch;
+    }
+
+    public void MarkPersisted(IEnumerable<BeaconEntry> entries)
+    {
+        lock (_gate)
+        {
+            foreach (var entry in entries)
+            {
+                if (_index.TryGetValue(entry.Id, out var node) && !node.Value.Persisted)
+                {
+                    node.Value.Persisted = true;
+                    _unsaved--;
+                }
+            }
+        }
+    }
+
+    public IReadOnlyList<BufferedBeacon> Snapshot()
+    {
+        lock (_gate)
+        {
+            var items = new BufferedBeacon[_order.Count];
+            var i = 0;
+            foreach (var slot in _order)
+            {
+                items[i++] = new BufferedBeacon(slot.Entry, slot.Persisted);
+            }
+
+            return items;
+        }
+    }
+
+    public BufferStats Stats
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return new BufferStats(_order.Count, _bytes, _unsaved, _dropped);
+            }
+        }
+    }
+
+    public async Task WaitForWorkAsync(TimeSpan timeout, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _signal.WaitAsync(timeout, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private void Remove(LinkedListNode<Slot> node)
+    {
+        _order.Remove(node);
+        _index.Remove(node.Value.Entry.Id);
+        _bytes -= node.Value.Entry.Size;
+    }
+
+    private void Signal()
+    {
+        try
+        {
+            _signal.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+        }
+    }
+
+    private void Notify()
+    {
+        if (Changed is not { } handlers)
+        {
+            return;
+        }
+
+        foreach (var handler in handlers.GetInvocationList().Cast<Action>())
+        {
+            try
+            {
+                handler();
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Beacon buffer subscriber failed");
+            }
+        }
+    }
+
+    private sealed class Slot(BeaconEntry entry)
+    {
+        public BeaconEntry Entry { get; } = entry;
+        public bool Persisted { get; set; }
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconCapture.cs
+SIZE:     6.49 KB (6647 bytes)
+LINES:    227
+SHA256:   53b917171e7d3828f99dc27297f4b2ff997d3ba089b5aa81cfc5f186d2c52f47
+MODIFIED: 2026-11-17 07:42:48 (UTC)
+================================================================================
+
+using System.Buffers;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Text.Unicode;
+using Microsoft.Extensions.Options;
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class BeaconCapture(IOptions<BeaconOptions> options, TimeProvider time)
+{
+    public const string Utf8Encoding = "utf-8";
+    public const string Base64Encoding = "base64";
+    public const string Redacted = "[redacted]";
+
+    private const int MaxPathLength = 512;
+    private const int MaxQueryLength = 2048;
+    private const int MaxRefererLength = 512;
+    private const int MaxUserAgentLength = 512;
+    private const int MaxContentTypeLength = 256;
+    private const int RowOverhead = 256;
+
+    private static readonly HashSet<string> RedactedHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "authorization",
+        "proxy-authorization",
+        "cookie",
+        "x-forwarded-for",
+        "x-real-ip",
+        "x-client-ip",
+        "x-original-for",
+        "forwarded",
+        "true-client-ip",
+        "cf-connecting-ip",
+        "fastly-client-ip",
+        "x-cluster-client-ip",
+    };
+
+    private readonly BeaconOptions _options = options.Value;
+
+    public int MaxBodyBytes => _options.MaxBodyBytes;
+
+    public async Task<BeaconEntry?> FromRequestAsync(HttpContext context, string key, CancellationToken cancellationToken)
+    {
+        var request = context.Request;
+        var limit = _options.MaxBodyBytes;
+        if (request.ContentLength > limit)
+        {
+            return null;
+        }
+
+        var buffer = ArrayPool<byte>.Shared.Rent(limit + 1);
+        try
+        {
+            var total = 0;
+            while (total <= limit)
+            {
+                var read = await request.Body.ReadAsync(buffer.AsMemory(total, limit + 1 - total), cancellationToken);
+                if (read == 0)
+                {
+                    break;
+                }
+
+                total += read;
+            }
+
+            if (total > limit)
+            {
+                return null;
+            }
+
+            var headers = CaptureHeaders(request.Headers);
+            return Build(
+                key,
+                request.Method,
+                request.Path.Value ?? "/",
+                request.QueryString.Value ?? "",
+                headers.GetValueOrDefault("referer") ?? headers.GetValueOrDefault("origin"),
+                request.ContentType,
+                Anonymize(context.Connection.RemoteIpAddress),
+                headers.GetValueOrDefault("user-agent"),
+                headers,
+                buffer.AsSpan(0, total));
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    public BeaconEntry FromPage(string key, string pageUrl, string body)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["x-zen-source"] = "blazor-circuit",
+        };
+
+        return Build(key, "POST", "/beacons", "", pageUrl, "text/plain", null, null, headers, Encoding.UTF8.GetBytes(body));
+    }
+
+    private BeaconEntry Build(
+        string key,
+        string method,
+        string path,
+        string query,
+        string? referer,
+        string? contentType,
+        string? client,
+        string? userAgent,
+        Dictionary<string, string> headers,
+        ReadOnlySpan<byte> body)
+    {
+        var receivedAt = time.GetUtcNow();
+        var isText = Utf8.IsValid(body) && !body.Contains((byte)0);
+        var text = isText ? Encoding.UTF8.GetString(body) : Convert.ToBase64String(body);
+
+        var cleanPath = Clean(path, MaxPathLength);
+        var cleanQuery = Clean(query, MaxQueryLength);
+        var cleanReferer = Clean(referer, MaxRefererLength);
+        var cleanContentType = NullIfEmpty(Clean(contentType, MaxContentTypeLength));
+        var cleanUserAgent = NullIfEmpty(Clean(userAgent, MaxUserAgentLength));
+
+        var size = RowOverhead
+            + Encoding.UTF8.GetByteCount(text)
+            + key.Length
+            + cleanPath.Length
+            + cleanQuery.Length
+            + cleanReferer.Length
+            + (cleanContentType?.Length ?? 0)
+            + (cleanUserAgent?.Length ?? 0)
+            + headers.Sum(h => h.Key.Length + h.Value.Length + 6);
+
+        return new BeaconEntry(
+            Guid.CreateVersion7(receivedAt),
+            key,
+            receivedAt,
+            Clean(method, 16),
+            cleanPath,
+            cleanQuery,
+            cleanReferer,
+            cleanContentType,
+            client,
+            cleanUserAgent,
+            headers,
+            text,
+            isText ? Utf8Encoding : Base64Encoding,
+            size);
+    }
+
+    private Dictionary<string, string> CaptureHeaders(IHeaderDictionary source)
+    {
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, values) in source)
+        {
+            if (headers.Count >= _options.MaxHeaders)
+            {
+                break;
+            }
+
+            var lower = Clean(name, 128).ToLowerInvariant();
+            if (lower.Length == 0)
+            {
+                continue;
+            }
+
+            headers[lower] = RedactedHeaders.Contains(lower)
+                ? Redacted
+                : Clean(values.ToString(), _options.MaxHeaderValueLength);
+        }
+
+        return headers;
+    }
+
+    public static string? Anonymize(IPAddress? address)
+    {
+        if (address is null)
+        {
+            return null;
+        }
+
+        if (address.IsIPv4MappedToIPv6)
+        {
+            address = address.MapToIPv4();
+        }
+
+        var bytes = address.GetAddressBytes();
+        if (address.AddressFamily == AddressFamily.InterNetwork)
+        {
+            bytes[3] = 0;
+            return $"{new IPAddress(bytes)}/24";
+        }
+
+        Array.Clear(bytes, 6, bytes.Length - 6);
+        return $"{new IPAddress(bytes)}/48";
+    }
+
+    public static string Clean(string? value, int maxLength)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return "";
+        }
+
+        var builder = new StringBuilder(Math.Min(value.Length, maxLength));
+        foreach (var c in value)
+        {
+            if (builder.Length >= maxLength)
+            {
+                break;
+            }
+
+            if (!char.IsControl(c))
+            {
+                builder.Append(c);
+            }
+        }
+
+        if (builder.Length > 0 && char.IsHighSurrogate(builder[^1]))
+        {
+            builder.Length--;
+        }
+
+        return builder.ToString();
+    }
+
+    private static string? NullIfEmpty(string value) => value.Length == 0 ? null : value;
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconEndpoints.cs
+SIZE:     5.04 KB (5159 bytes)
+LINES:    120
+SHA256:   5051730c999ce1cc1e9578d4b36a413ef20e74513d63cbab59849be740eaefbc
+MODIFIED: 2026-11-17 07:46:30 (UTC)
+================================================================================
+
+using System.Globalization;
+
+namespace Zen.Blazor.Beacons;
+
+public static class BeaconEndpoints
+{
+    public const string CorsPolicy = "beacons";
+    public const string WritePolicy = "beacon-write";
+    public const string ReadPolicy = "beacon-read";
+
+    public static IEndpointRouteBuilder MapBeaconEndpoints(this IEndpointRouteBuilder app)
+    {
+        var api = app.MapGroup("/api")
+            .RequireCors(CorsPolicy)
+            .AddEndpointFilter(GuardAsync);
+
+        api.MapPost("/beacons/{key}", PostAsync).RequireRateLimiting(WritePolicy).DisableAntiforgery();
+        api.MapGet("/beacons", TopKeysAsync).RequireRateLimiting(ReadPolicy);
+        api.MapGet("/beacons/{key}", SummarizeAsync).RequireRateLimiting(ReadPolicy);
+        api.MapGet("/beacons/{key}/entries", ListAsync).RequireRateLimiting(ReadPolicy);
+        api.MapGet("/entries/{id:guid}", GetAsync).RequireRateLimiting(ReadPolicy);
+        api.MapGet("/status", (BeaconService beacons) => TypedResults.Ok(beacons.Status())).RequireRateLimiting(ReadPolicy);
+
+        return app;
+    }
+
+    private static async Task<IResult> PostAsync(
+        string key, HttpContext context, BeaconCapture capture, BeaconService beacons, CancellationToken cancellationToken)
+    {
+        if (!BeaconKey.IsValid(key))
+        {
+            return InvalidKey();
+        }
+
+        var entry = await capture.FromRequestAsync(context, key, cancellationToken);
+        if (entry is null)
+        {
+            return TypedResults.Problem($"Body exceeds {capture.MaxBodyBytes} bytes.", statusCode: StatusCodes.Status413PayloadTooLarge);
+        }
+
+        beacons.Accept(entry);
+        var location = $"/api/entries/{entry.Id}";
+        return TypedResults.Created(location, new AcceptedBeacon(entry.Id, entry.Key, entry.ReceivedAt, entry.Size, location));
+    }
+
+    private static async Task<IResult> GetAsync(
+        Guid id, HttpContext context, BeaconService beacons, DatabaseCircuit circuit, CancellationToken cancellationToken)
+    {
+        var lookup = await beacons.GetAsync(id, cancellationToken);
+        return lookup.Status switch
+        {
+            LookupStatus.Found => TypedResults.Ok(lookup.Entry),
+            LookupStatus.NotFound => TypedResults.Problem("No beacon with that id. It may have expired.", statusCode: StatusCodes.Status404NotFound),
+            _ => Unavailable(context, circuit),
+        };
+    }
+
+    private static async Task<IResult> SummarizeAsync(
+        string key, string? referer, BeaconService beacons, CancellationToken cancellationToken)
+    {
+        if (!BeaconKey.IsValid(key))
+        {
+            return InvalidKey();
+        }
+
+        return TypedResults.Ok(await beacons.SummarizeAsync(key, EmptyToNull(referer), cancellationToken));
+    }
+
+    private static async Task<IResult> ListAsync(
+        string key, string? referer, Guid? before, int? limit, BeaconService beacons, CancellationToken cancellationToken)
+    {
+        if (!BeaconKey.IsValid(key))
+        {
+            return InvalidKey();
+        }
+
+        return TypedResults.Ok(await beacons.ListAsync(key, EmptyToNull(referer), before, limit ?? 50, cancellationToken));
+    }
+
+    private static async Task<IResult> TopKeysAsync(int? limit, BeaconService beacons, CancellationToken cancellationToken) =>
+        TypedResults.Ok(await beacons.TopKeysAsync(limit ?? 20, cancellationToken));
+
+    private static async ValueTask<object?> GuardAsync(EndpointFilterInvocationContext invocation, EndpointFilterDelegate next)
+    {
+        var context = invocation.HttpContext;
+        context.Response.Headers.XContentTypeOptions = "nosniff";
+        context.Response.Headers.CacheControl = "no-store";
+
+        try
+        {
+            return await next(invocation);
+        }
+        catch (BadHttpRequestException ex)
+        {
+            return TypedResults.Problem(ex.Message, statusCode: ex.StatusCode);
+        }
+        catch (Exception ex) when (!context.RequestAborted.IsCancellationRequested)
+        {
+            context.RequestServices.GetRequiredService<ILoggerFactory>()
+                .CreateLogger(typeof(BeaconEndpoints))
+                .LogError(ex, "Beacon API request failed");
+            return TypedResults.Problem("Something went wrong.", statusCode: StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    private static IResult Unavailable(HttpContext context, DatabaseCircuit circuit)
+    {
+        var seconds = Math.Max(1, (int)Math.Ceiling(circuit.RetryIn.TotalSeconds));
+        context.Response.Headers.RetryAfter = seconds.ToString(CultureInfo.InvariantCulture);
+        return TypedResults.Problem(
+            "Storage is temporarily unavailable and this id is not in memory. Try again shortly.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+
+    private static IResult InvalidKey() => TypedResults.Problem(
+        $"Key must be 1-{BeaconKey.MaxLength} characters of letters, digits, '.', '_', '~', ':' or '-', starting with a letter or digit.",
+        statusCode: StatusCodes.Status400BadRequest);
+
+    private static string? EmptyToNull(string? value) => string.IsNullOrEmpty(value) ? null : value;
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconExample.cs
+SIZE:     1.25 KB (1285 bytes)
+LINES:    35
+SHA256:   a06c460638dc39963260e417ef94bfa3d64331423825763a8e3be85013bccd46
+MODIFIED: 2026-11-17 07:48:14 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public sealed record BeaconExample(string Title, string Code)
+{
+    public static IReadOnlyList<BeaconExample> For(string origin) =>
+    [
+        new("Send and read back",
+            $$"""
+            curl -i -X POST {{origin}}/api/beacons/my-app \
+              -H 'Content-Type: application/json' \
+              -d '{"event":"signup","plan":"free"}'
+
+            curl {{origin}}/api/entries/<id from Location>
+            """),
+        new("Page analytics",
+            $$"""
+            navigator.sendBeacon("{{origin}}/api/beacons/my-site-views",
+              JSON.stringify({ path: location.pathname, ref: document.referrer }));
+
+            curl "{{origin}}/api/beacons/my-site-views?referer=https://my.site/"
+            """),
+        new("CSP report-only",
+            $$"""
+            Content-Security-Policy-Report-Only: default-src 'self'; report-uri {{origin}}/api/beacons/my-site-csp
+
+            curl "{{origin}}/api/beacons/my-site-csp/entries?limit=20"
+            """),
+        new("Visit and reaction counts",
+            $$"""
+            fetch("{{origin}}/api/beacons/my-post-like", { method: "POST" });
+
+            const { total } = await (await fetch("{{origin}}/api/beacons/my-post-like")).json();
+            """),
+    ];
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconIds.cs
+SIZE:     0.49 KB (501 bytes)
+LINES:    18
+SHA256:   c8a34015e3d8a802cf6af38489bf10a58c2700baa6e1f027415f983c55054c6e
+MODIFIED: 2026-11-17 07:44:32 (UTC)
+================================================================================
+
+using System.Buffers.Binary;
+
+namespace Zen.Blazor.Beacons;
+
+public static class BeaconIds
+{
+    public static Guid Floor(DateTimeOffset at)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        bytes.Clear();
+        Span<byte> stamp = stackalloc byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(stamp, Math.Max(0, at.ToUnixTimeMilliseconds()));
+        stamp[2..].CopyTo(bytes);
+        bytes[6] = 0x70;
+        bytes[8] = 0x80;
+        return new Guid(bytes, bigEndian: true);
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconJanitor.cs
+SIZE:     3.84 KB (3937 bytes)
+LINES:    114
+SHA256:   17a651fa3687cfeb8e02cab16600f666a6947909463e0a8b6f7fc046f7b217fc
+MODIFIED: 2026-11-17 07:45:52 (UTC)
+================================================================================
+
+using Microsoft.Extensions.Options;
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class BeaconJanitor(
+    IBeaconStore store,
+    IBeaconMaintenance maintenance,
+    DatabaseCircuit circuit,
+    IOptions<BeaconOptions> options,
+    TimeProvider time,
+    ILogger<BeaconJanitor> logger) : BackgroundService
+{
+    private const double TargetRatio = 0.8;
+    private const double RecoverRatio = 0.6;
+    private const long MinBudgetBytes = 1024 * 1024;
+    private static readonly TimeSpan InitialDelay = TimeSpan.FromSeconds(15);
+
+    private readonly BeaconOptions _options = options.Value;
+    private long _budget = options.Value.StorageBudgetBytes;
+    private long _lastDatabaseBytes;
+    private PruneReport? _lastReport;
+
+    public PruneReport? LastReport => Volatile.Read(ref _lastReport);
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!store.IsConfigured)
+        {
+            return;
+        }
+
+        try
+        {
+            await Task.Delay(InitialDelay, time, stoppingToken);
+            using var timer = new PeriodicTimer(_options.PruneInterval, time);
+            do
+            {
+                if (!circuit.CanAttempt)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await RunAsync(stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    circuit.Failed(ex);
+                }
+            }
+            while (await timer.WaitForNextTickAsync(stoppingToken));
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+        }
+    }
+
+    private async Task RunAsync(CancellationToken cancellationToken)
+    {
+        var cutoff = time.GetUtcNow().AddDays(-_options.RetentionDays);
+        var result = await PruneAsync(cutoff, cancellationToken);
+
+        if (result.DatabaseBytes > _options.DatabaseLimitBytes)
+        {
+            var growing = result.DatabaseBytes > _lastDatabaseBytes;
+            if (growing)
+            {
+                _budget = Math.Max(MinBudgetBytes, _budget / 2);
+                logger.LogWarning(
+                    "Database at {Size} bytes exceeds {Limit}; budget lowered to {Budget}",
+                    result.DatabaseBytes, _options.DatabaseLimitBytes, _budget);
+                result = await PruneAsync(cutoff, cancellationToken);
+            }
+
+            await VacuumAsync(cancellationToken);
+        }
+        else if (result.DatabaseBytes < _options.DatabaseLimitBytes * RecoverRatio && _budget < _options.StorageBudgetBytes)
+        {
+            _budget = Math.Min(_options.StorageBudgetBytes, _budget + _budget / 4);
+        }
+
+        _lastDatabaseBytes = result.DatabaseBytes;
+        circuit.Succeeded();
+        Volatile.Write(ref _lastReport, new PruneReport(time.GetUtcNow(), result.Removed, result.StoredBytes, result.DatabaseBytes, _budget));
+    }
+
+    private async Task VacuumAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await maintenance.VacuumAsync(cancellationToken);
+        }
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Vacuum failed");
+        }
+    }
+
+    private async Task<PruneResult> PruneAsync(DateTimeOffset cutoff, CancellationToken cancellationToken)
+    {
+        var result = await maintenance.PruneAsync(cutoff, _budget, (long)(_budget * TargetRatio), cancellationToken);
+        if (result.Removed > 0)
+        {
+            logger.LogInformation("Pruned {Count} beacons; {Stored} bytes stored, database {Database} bytes", result.Removed, result.StoredBytes, result.DatabaseBytes);
+        }
+
+        return result;
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconJsonContext.cs
+SIZE:     0.57 KB (587 bytes)
+LINES:    15
+SHA256:   d2e24a1a17e42f5d4503b2d2ad637e304cf60e44e605b33a37cb57362e0e1e47
+MODIFIED: 2026-11-17 07:44:34 (UTC)
+================================================================================
+
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace Zen.Blazor.Beacons;
+
+[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
+[JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(IReadOnlyDictionary<string, string>))]
+[JsonSerializable(typeof(BeaconEntry))]
+[JsonSerializable(typeof(AcceptedBeacon))]
+[JsonSerializable(typeof(BeaconSummary))]
+[JsonSerializable(typeof(BeaconPage))]
+[JsonSerializable(typeof(BeaconKeys))]
+[JsonSerializable(typeof(StorageStatus))]
+public sealed partial class BeaconJsonContext : JsonSerializerContext;
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconKey.cs
+SIZE:     0.40 KB (406 bytes)
+LINES:    14
+SHA256:   04402b0f2a44b242e1b5e2829b266a87cfdc66ff9715031c07a307c59a6ab1c3
+MODIFIED: 2026-11-17 07:42:30 (UTC)
+================================================================================
+
+using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
+
+namespace Zen.Blazor.Beacons;
+
+public static partial class BeaconKey
+{
+    public const int MaxLength = 64;
+
+    public static bool IsValid([NotNullWhen(true)] string? key) => key is not null && Pattern().IsMatch(key);
+
+    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._~:-]{0,63}\z")]
+    private static partial Regex Pattern();
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconModels.cs
+SIZE:     5.03 KB (5150 bytes)
+LINES:    169
+SHA256:   461ac767b54f450c36704c56512f815e2afb2a4f05d6f55a4c7eb20a8959cfd6
+MODIFIED: 2026-11-17 07:42:19 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public sealed record BeaconEntry(
+    Guid Id,
+    string Key,
+    DateTimeOffset ReceivedAt,
+    string Method,
+    string Path,
+    string Query,
+    string Referer,
+    string? ContentType,
+    string? Client,
+    string? UserAgent,
+    IReadOnlyDictionary<string, string> Headers,
+    string Body,
+    string BodyEncoding,
+    int Size);
+
+public sealed record BeaconItem(
+    Guid Id,
+    string Key,
+    DateTimeOffset ReceivedAt,
+    string Referer,
+    string? ContentType,
+    int Size,
+    string Preview);
+
+public sealed record RefererCount(string Referer, long Count, DateTimeOffset LastAt);
+
+public sealed record HourCount(DateTimeOffset Hour, long Count);
+
+public sealed record KeyCount(string Key, long Count);
+
+public sealed record BeaconTotals(
+    long Total,
+    long Bytes,
+    DateTimeOffset? FirstAt,
+    DateTimeOffset? LastAt,
+    IReadOnlyList<RefererCount> Referers,
+    IReadOnlyList<HourCount> Hourly)
+{
+    public const int MaxReferers = 25;
+
+    public static readonly BeaconTotals Empty = new(0, 0, null, null, [], []);
+
+    public static BeaconTotals From(IEnumerable<BeaconEntry> entries, DateTimeOffset hourlySince)
+    {
+        var list = entries as IReadOnlyCollection<BeaconEntry> ?? entries.ToList();
+        if (list.Count == 0)
+        {
+            return Empty;
+        }
+
+        var referers = list
+            .GroupBy(e => e.Referer, StringComparer.Ordinal)
+            .Select(g => new RefererCount(g.Key, g.LongCount(), g.Max(e => e.ReceivedAt)))
+            .ToList();
+
+        var hourly = list
+            .Where(e => e.ReceivedAt >= hourlySince)
+            .GroupBy(e => TruncateToHour(e.ReceivedAt))
+            .Select(g => new HourCount(g.Key, g.LongCount()))
+            .ToList();
+
+        return new BeaconTotals(
+            list.Count,
+            list.Sum(e => (long)e.Size),
+            list.Min(e => e.ReceivedAt),
+            list.Max(e => e.ReceivedAt),
+            referers,
+            hourly);
+    }
+
+    public BeaconTotals Combine(BeaconTotals other)
+    {
+        if (other.Total == 0)
+        {
+            return this with { Referers = TopReferers(Referers), Hourly = [.. Hourly.OrderBy(h => h.Hour)] };
+        }
+
+        var referers = Referers.Concat(other.Referers)
+            .GroupBy(r => r.Referer, StringComparer.Ordinal)
+            .Select(g => new RefererCount(g.Key, g.Sum(r => r.Count), g.Max(r => r.LastAt)));
+
+        var hourly = Hourly.Concat(other.Hourly)
+            .GroupBy(h => h.Hour)
+            .Select(g => new HourCount(g.Key, g.Sum(h => h.Count)))
+            .OrderBy(h => h.Hour)
+            .ToList();
+
+        return new BeaconTotals(
+            Total + other.Total,
+            Bytes + other.Bytes,
+            Min(FirstAt, other.FirstAt),
+            Max(LastAt, other.LastAt),
+            TopReferers(referers),
+            hourly);
+    }
+
+    public static DateTimeOffset TruncateToHour(DateTimeOffset value)
+    {
+        var utc = value.ToUniversalTime();
+        return new DateTimeOffset(utc.Year, utc.Month, utc.Day, utc.Hour, 0, 0, TimeSpan.Zero);
+    }
+
+    private static List<RefererCount> TopReferers(IEnumerable<RefererCount> referers) =>
+        [.. referers.OrderByDescending(r => r.Count).ThenBy(r => r.Referer, StringComparer.Ordinal).Take(MaxReferers)];
+
+    private static DateTimeOffset? Min(DateTimeOffset? a, DateTimeOffset? b) =>
+        a is null ? b : b is null ? a : a < b ? a : b;
+
+    private static DateTimeOffset? Max(DateTimeOffset? a, DateTimeOffset? b) =>
+        a is null ? b : b is null ? a : a > b ? a : b;
+}
+
+public sealed record PruneResult(long Removed, long StoredBytes, long DatabaseBytes);
+
+public sealed record PruneReport(DateTimeOffset At, long Removed, long StoredBytes, long DatabaseBytes, long BudgetBytes);
+
+public enum LookupStatus
+{
+    Found,
+    NotFound,
+    Unavailable,
+}
+
+public sealed record Lookup(LookupStatus Status, BeaconEntry? Entry);
+
+public sealed record AcceptedBeacon(Guid Id, string Key, DateTimeOffset ReceivedAt, int Size, string Location);
+
+public sealed record BeaconSummary(
+    string Key,
+    string? Referer,
+    long Total,
+    long Bytes,
+    DateTimeOffset? FirstAt,
+    DateTimeOffset? LastAt,
+    IReadOnlyList<RefererCount> Referers,
+    IReadOnlyList<HourCount> Hourly,
+    bool Degraded);
+
+public sealed record BeaconPage(string? Key, string? Referer, IReadOnlyList<BeaconItem> Items, Guid? Next, bool Degraded);
+
+public sealed record BeaconKeys(IReadOnlyList<KeyCount> Keys, bool Degraded);
+
+public sealed record StorageStatus(
+    string Database,
+    string? LastError,
+    DateTimeOffset? RetryAt,
+    DateTimeOffset? LastSuccessAt,
+    int MemoryEntries,
+    long MemoryBytes,
+    int Unsaved,
+    long Dropped,
+    long? StoredBytes,
+    long? DatabaseBytes,
+    long BudgetBytes,
+    long DatabaseLimitBytes,
+    int RetentionDays,
+    int MaxBodyBytes,
+    DateTimeOffset? LastPruneAt);
+
+public sealed record BeaconOverview(
+    IReadOnlyDictionary<string, long> Counts,
+    IReadOnlyList<BeaconItem> Recent,
+    IReadOnlyList<KeyCount> TopKeys,
+    StorageStatus Status,
+    bool Degraded,
+    DateTimeOffset At);
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconOptions.cs
+SIZE:     1.42 KB (1449 bytes)
+LINES:    37
+SHA256:   203ca959ca16aa507a8a9c0e345a7ac17a0b5ed7b5bbde0788fc04ba5b05e418
+MODIFIED: 2026-11-17 07:42:26 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class BeaconOptions
+{
+    public const string Section = "Beacons";
+
+    public int MaxBodyBytes { get; set; } = 32 * 1024;
+    public int MaxHeaders { get; set; } = 64;
+    public int MaxHeaderValueLength { get; set; } = 1024;
+    public long MemoryBytes { get; set; } = 4L * 1024 * 1024;
+    public int MemoryEntries { get; set; } = 2000;
+    public long StorageBudgetBytes { get; set; } = 48L * 1024 * 1024;
+    public long DatabaseLimitBytes { get; set; } = 160L * 1024 * 1024;
+    public int RetentionDays { get; set; } = 30;
+    public TimeSpan PruneInterval { get; set; } = TimeSpan.FromMinutes(2);
+    public int WriteBatchSize { get; set; } = 50;
+    public int MaxPoolSize { get; set; } = 2;
+    public int WritesPerMinute { get; set; } = 30;
+    public int ReadsPerMinute { get; set; } = 120;
+    public string CspKey { get; set; } = "zen-csp";
+
+    public bool IsValid() =>
+        MaxBodyBytes is > 0 and <= 1024 * 1024
+        && MaxHeaders > 0
+        && MaxHeaderValueLength > 0
+        && MemoryBytes >= MaxBodyBytes * 4L
+        && MemoryEntries > 0
+        && StorageBudgetBytes > 0
+        && DatabaseLimitBytes > StorageBudgetBytes
+        && RetentionDays > 0
+        && PruneInterval >= TimeSpan.FromSeconds(10)
+        && WriteBatchSize > 0
+        && MaxPoolSize is > 0 and <= 5
+        && WritesPerMinute > 0
+        && ReadsPerMinute > 0
+        && BeaconKey.IsValid(CspKey);
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconService.cs
+SIZE:     7.84 KB (8026 bytes)
+LINES:    217
+SHA256:   b3b9d99f0e9922df15f6a5e43fe523352b68215eee407e3052d0a500ada44038
+MODIFIED: 2026-11-17 07:45:06 (UTC)
+================================================================================
+
+using Microsoft.Extensions.Options;
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class BeaconService(
+    BeaconBuffer buffer,
+    IBeaconStore store,
+    DatabaseCircuit circuit,
+    BeaconJanitor janitor,
+    IOptions<BeaconOptions> options,
+    TimeProvider time,
+    ILogger<BeaconService> logger)
+{
+    public const int MaxPageSize = 100;
+    public const int MaxTopKeys = 50;
+
+    private static readonly TimeSpan OverviewTtl = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan HourlyWindow = TimeSpan.FromHours(24);
+
+    private readonly BeaconOptions _options = options.Value;
+    private readonly SemaphoreSlim _overviewGate = new(1, 1);
+    private OverviewCache? _overview;
+
+    public void Accept(BeaconEntry entry) => buffer.Add(entry);
+
+    public async Task<Lookup> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        if (buffer.TryGet(id, out var cached))
+        {
+            return new Lookup(LookupStatus.Found, cached);
+        }
+
+        var (entry, ok) = await TryStoreAsync(s => s.GetAsync(id, cancellationToken), cancellationToken);
+        if (!ok)
+        {
+            return new Lookup(LookupStatus.Unavailable, null);
+        }
+
+        return entry is null ? new Lookup(LookupStatus.NotFound, null) : new Lookup(LookupStatus.Found, entry);
+    }
+
+    public async Task<BeaconPage> ListAsync(string? key, string? referer, Guid? before, int limit, CancellationToken cancellationToken)
+    {
+        limit = Math.Clamp(limit, 1, MaxPageSize);
+        var (stored, ok) = await TryStoreAsync(s => s.ListAsync(key, referer, before, limit, cancellationToken), cancellationToken);
+
+        var memory = Memory(ok)
+            .Where(e => (key is null || e.Key == key)
+                        && (referer is null || e.Referer == referer)
+                        && (before is null || e.Id.CompareTo(before.Value) < 0))
+            .Select(ToItem);
+
+        var items = (stored ?? [])
+            .Concat(memory)
+            .DistinctBy(i => i.Id)
+            .OrderByDescending(i => i.Id)
+            .Take(limit)
+            .ToList();
+
+        var next = items.Count == limit ? items[^1].Id : (Guid?)null;
+        return new BeaconPage(key, referer, items, next, IsDegraded(ok));
+    }
+
+    public async Task<BeaconSummary> SummarizeAsync(string key, string? referer, CancellationToken cancellationToken)
+    {
+        var since = time.GetUtcNow() - HourlyWindow;
+        var (stored, ok) = await TryStoreAsync(s => s.SummarizeAsync(key, referer, since, cancellationToken), cancellationToken);
+
+        var memory = BeaconTotals.From(
+            Memory(ok).Where(e => e.Key == key && (referer is null || e.Referer == referer)),
+            since);
+
+        var totals = (stored ?? BeaconTotals.Empty).Combine(memory);
+        return new BeaconSummary(key, referer, totals.Total, totals.Bytes, totals.FirstAt, totals.LastAt, totals.Referers, totals.Hourly, IsDegraded(ok));
+    }
+
+    public async Task<BeaconKeys> TopKeysAsync(int limit, CancellationToken cancellationToken)
+    {
+        limit = Math.Clamp(limit, 1, MaxTopKeys);
+        var (stored, ok) = await TryStoreAsync(s => s.TopKeysAsync(limit, cancellationToken), cancellationToken);
+        var keys = (stored ?? [])
+            .Concat(Memory(ok).GroupBy(e => e.Key, StringComparer.Ordinal).Select(g => new KeyCount(g.Key, g.LongCount())))
+            .GroupBy(k => k.Key, StringComparer.Ordinal)
+            .Select(g => new KeyCount(g.Key, g.Sum(k => k.Count)))
+            .OrderByDescending(k => k.Count)
+            .ThenBy(k => k.Key, StringComparer.Ordinal)
+            .Take(limit)
+            .ToList();
+
+        return new BeaconKeys(keys, IsDegraded(ok));
+    }
+
+    public StorageStatus Status()
+    {
+        var stats = buffer.Stats;
+        var state = circuit.State;
+        var report = janitor.LastReport;
+        var database = !store.IsConfigured ? "memory-only"
+            : state.Failures > 0 ? "unavailable"
+            : state.LastSuccessAt is null ? "connecting"
+            : "connected";
+
+        return new StorageStatus(
+            database,
+            state.LastError,
+            state.RetryAt,
+            state.LastSuccessAt,
+            stats.Entries,
+            stats.Bytes,
+            stats.Unsaved,
+            stats.Dropped,
+            report?.StoredBytes,
+            report?.DatabaseBytes,
+            report?.BudgetBytes ?? _options.StorageBudgetBytes,
+            _options.DatabaseLimitBytes,
+            _options.RetentionDays,
+            _options.MaxBodyBytes,
+            report?.At);
+    }
+
+    public async Task<BeaconOverview> GetOverviewAsync(IReadOnlyCollection<string> countKeys, bool fresh, CancellationToken cancellationToken)
+    {
+        var signature = string.Join('\n', countKeys);
+        var requestedAt = time.GetUtcNow();
+
+        if (!fresh && Volatile.Read(ref _overview) is { } cached && cached.Signature == signature && requestedAt - cached.Value.At < OverviewTtl)
+        {
+            return cached.Value;
+        }
+
+        await _overviewGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_overview is { } current && current.Signature == signature
+                && (fresh ? current.Value.At >= requestedAt : time.GetUtcNow() - current.Value.At < OverviewTtl))
+            {
+                return current.Value;
+            }
+
+            var overview = await BuildOverviewAsync(countKeys, cancellationToken);
+            Volatile.Write(ref _overview, new OverviewCache(signature, overview));
+            return overview;
+        }
+        finally
+        {
+            _overviewGate.Release();
+        }
+    }
+
+    private async Task<BeaconOverview> BuildOverviewAsync(IReadOnlyCollection<string> countKeys, CancellationToken cancellationToken)
+    {
+        var at = time.GetUtcNow();
+        var (stored, ok) = await TryStoreAsync(s => s.CountAsync(countKeys, cancellationToken), cancellationToken);
+        var memory = Memory(ok).Where(e => countKeys.Contains(e.Key)).ToList();
+        var counts = countKeys.Distinct(StringComparer.Ordinal).ToDictionary(
+            k => k,
+            k => (stored?.GetValueOrDefault(k) ?? 0) + memory.Count(e => e.Key == k),
+            StringComparer.Ordinal);
+
+        var recent = await ListAsync(null, null, null, 15, cancellationToken);
+        var keys = await TopKeysAsync(10, cancellationToken);
+        var degraded = IsDegraded(ok) || recent.Degraded || keys.Degraded;
+
+        return new BeaconOverview(counts, recent.Items, keys.Keys, Status(), degraded, at);
+    }
+
+    private IEnumerable<BeaconEntry> Memory(bool storeOk)
+    {
+        var snapshot = buffer.Snapshot();
+        return storeOk
+            ? snapshot.Where(b => !b.Persisted).Select(b => b.Entry)
+            : snapshot.Select(b => b.Entry);
+    }
+
+    private bool IsDegraded(bool storeOk) => store.IsConfigured && !storeOk;
+
+    private async Task<(T? Value, bool Ok)> TryStoreAsync<T>(Func<IBeaconStore, Task<T>> operation, CancellationToken cancellationToken)
+    {
+        if (!store.IsConfigured)
+        {
+            return (await operation(store), true);
+        }
+
+        if (!circuit.CanAttempt)
+        {
+            return (default, false);
+        }
+
+        try
+        {
+            var value = await operation(store);
+            circuit.Succeeded();
+            return (value, true);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            circuit.Failed(ex);
+            logger.LogDebug(ex, "Beacon read fell back to memory");
+            return (default, false);
+        }
+    }
+
+    private static BeaconItem ToItem(BeaconEntry entry) => new(
+        entry.Id,
+        entry.Key,
+        entry.ReceivedAt,
+        entry.Referer,
+        entry.ContentType,
+        entry.Size,
+        entry.Body.Length > 160 ? entry.Body[..160] : entry.Body);
+
+    private sealed record OverviewCache(string Signature, BeaconOverview Value);
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconSetup.cs
+SIZE:     5.34 KB (5465 bytes)
+LINES:    133
+SHA256:   d6120ef50e493abdc1ba233a5e6549760349a98737d2ea6193a1080c3b28ac43
+MODIFIED: 2026-11-17 07:47:03 (UTC)
+================================================================================
+
+using System.Globalization;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using Npgsql;
+
+namespace Zen.Blazor.Beacons;
+
+public static class BeaconSetup
+{
+    public static IServiceCollection AddBeacons(this IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(BeaconOptions.Section);
+        var options = section.Get<BeaconOptions>() ?? new BeaconOptions();
+
+        services.AddOptions<BeaconOptions>()
+            .Bind(section)
+            .Validate(o => o.IsValid(), "Invalid Beacons settings.")
+            .ValidateOnStart();
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<BeaconCapture>();
+        services.AddSingleton<BeaconBuffer>();
+        services.AddSingleton<DatabaseCircuit>();
+        services.AddSingleton<BeaconService>();
+
+        var connectionString = PostgresSettings.ConnectionString(configuration, options.MaxPoolSize);
+        if (connectionString is null)
+        {
+            services.AddSingleton<NullBeaconStore>();
+            services.AddSingleton<IBeaconStore>(sp => sp.GetRequiredService<NullBeaconStore>());
+            services.AddSingleton<IBeaconMaintenance>(sp => sp.GetRequiredService<NullBeaconStore>());
+        }
+        else
+        {
+            services.AddSingleton(sp => new NpgsqlDataSourceBuilder(connectionString)
+                .UseLoggerFactory(sp.GetRequiredService<ILoggerFactory>())
+                .Build());
+            services.AddSingleton<PostgresBeaconStore>();
+            services.AddSingleton<IBeaconStore>(sp => sp.GetRequiredService<PostgresBeaconStore>());
+            services.AddSingleton<IBeaconMaintenance>(sp => sp.GetRequiredService<PostgresBeaconStore>());
+        }
+
+        services.AddSingleton<BeaconJanitor>();
+        services.AddHostedService(sp => sp.GetRequiredService<BeaconJanitor>());
+        services.AddHostedService<BeaconWriter>();
+
+        services.ConfigureHttpJsonOptions(o => o.SerializerOptions.TypeInfoResolverChain.Insert(0, BeaconJsonContext.Default));
+
+        services.AddCors(o => o.AddPolicy(BeaconEndpoints.CorsPolicy, policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .WithMethods(HttpMethods.Get, HttpMethods.Post)
+            .WithExposedHeaders("Location", "Retry-After")
+            .SetPreflightMaxAge(TimeSpan.FromHours(1))));
+
+        services.AddRateLimiter(o =>
+        {
+            o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            o.OnRejected = (context, _) =>
+            {
+                if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+                {
+                    context.HttpContext.Response.Headers.RetryAfter =
+                        Math.Max(1, (int)Math.Ceiling(retryAfter.TotalSeconds)).ToString(CultureInfo.InvariantCulture);
+                }
+
+                return new ValueTask(TypedResults
+                    .Problem("Too many requests. Slow down.", statusCode: StatusCodes.Status429TooManyRequests)
+                    .ExecuteAsync(context.HttpContext));
+            };
+            o.AddPolicy(BeaconEndpoints.WritePolicy, context => PerClient(context, options.WritesPerMinute));
+            o.AddPolicy(BeaconEndpoints.ReadPolicy, context => PerClient(context, options.ReadsPerMinute));
+        });
+
+        return services;
+    }
+
+    public static WebApplication UseBeacons(this WebApplication app)
+    {
+        var cspKey = app.Services.GetRequiredService<IOptions<BeaconOptions>>().Value.CspKey;
+        var reportPath = $"/api/beacons/{cspKey}";
+        var policy = string.Join("; ",
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data:",
+            "connect-src 'self'",
+            "font-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            $"report-uri {reportPath}",
+            "report-to csp");
+
+        app.Use((context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                if (context.Features.Get<IStatusCodePagesFeature>() is { } statusPages)
+                {
+                    statusPages.Enabled = false;
+                }
+            }
+            else
+            {
+                var request = context.Request;
+                context.Response.Headers.ContentSecurityPolicyReportOnly = policy;
+                context.Response.Headers["Reporting-Endpoints"] = $"csp=\"{request.Scheme}://{request.Host}{reportPath}\"";
+            }
+
+            return next(context);
+        });
+
+        app.UseCors();
+        app.UseRateLimiter();
+        return app;
+    }
+
+    private static RateLimitPartition<string> PerClient(HttpContext context, int perMinute) =>
+        RateLimitPartition.GetTokenBucketLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new TokenBucketRateLimiterOptions
+            {
+                TokenLimit = perMinute,
+                TokensPerPeriod = 1,
+                ReplenishmentPeriod = TimeSpan.FromMinutes(1) / perMinute,
+                QueueLimit = 0,
+                AutoReplenishment = true,
+            });
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/BeaconWriter.cs
+SIZE:     2.99 KB (3062 bytes)
+LINES:    98
+SHA256:   e9438707b1d4adb104c5add0cad2f7785af0a898b622f77e634a002dffa89d06
+MODIFIED: 2026-11-17 07:45:16 (UTC)
+================================================================================
+
+using Microsoft.Extensions.Options;
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class BeaconWriter(
+    BeaconBuffer buffer,
+    IBeaconStore store,
+    DatabaseCircuit circuit,
+    IOptions<BeaconOptions> options,
+    ILogger<BeaconWriter> logger) : BackgroundService
+{
+    private static readonly TimeSpan IdleWait = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan ShutdownFlush = TimeSpan.FromSeconds(5);
+
+    private readonly int _batchSize = options.Value.WriteBatchSize;
+    private long _reportedDropped;
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        if (!store.IsConfigured)
+        {
+            logger.LogWarning("No PostgreSQL settings found; beacons are kept in memory only");
+            return;
+        }
+
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            try
+            {
+                await FlushAsync(stoppingToken);
+                ReportDrops();
+                var wait = circuit.CanAttempt ? IdleWait : circuit.RetryIn;
+                await buffer.WaitForWorkAsync(wait, stoppingToken);
+                if (!circuit.CanAttempt)
+                {
+                    await Task.Delay(circuit.RetryIn, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Beacon writer loop failed");
+                await Task.Delay(IdleWait, stoppingToken).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            }
+        }
+
+        using var timeout = new CancellationTokenSource(ShutdownFlush);
+        try
+        {
+            await FlushAsync(timeout.Token);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Final beacon flush incomplete; {Count} unsaved beacons lost", buffer.Stats.Unsaved);
+        }
+    }
+
+    private async Task FlushAsync(CancellationToken cancellationToken)
+    {
+        while (circuit.CanAttempt)
+        {
+            var batch = buffer.TakeUnsaved(_batchSize);
+            if (batch.Count == 0)
+            {
+                return;
+            }
+
+            try
+            {
+                await store.InsertAsync(batch, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                circuit.Failed(ex);
+                return;
+            }
+
+            buffer.MarkPersisted(batch);
+            circuit.Succeeded();
+        }
+    }
+
+    private void ReportDrops()
+    {
+        var dropped = buffer.Stats.Dropped;
+        if (dropped > _reportedDropped)
+        {
+            logger.LogWarning("{Count} unsaved beacons dropped from a full memory buffer", dropped - _reportedDropped);
+            _reportedDropped = dropped;
+        }
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/DatabaseCircuit.cs
+SIZE:     2.52 KB (2577 bytes)
+LINES:    94
+SHA256:   78662db29a11b819742899010889118e48e86c1100b6d6f8d42fa569c6a78e97
+MODIFIED: 2026-11-17 07:43:19 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public readonly record struct CircuitState(int Failures, DateTimeOffset? RetryAt, DateTimeOffset? LastSuccessAt, string? LastError);
+
+public sealed class DatabaseCircuit(TimeProvider time, ILogger<DatabaseCircuit> logger)
+{
+    private static readonly TimeSpan MinDelay = TimeSpan.FromSeconds(2);
+    private static readonly TimeSpan MaxDelay = TimeSpan.FromSeconds(60);
+
+    private readonly Lock _gate = new();
+    private int _failures;
+    private DateTimeOffset _retryAt = DateTimeOffset.MinValue;
+    private DateTimeOffset? _lastSuccessAt;
+    private string? _lastError;
+
+    public bool CanAttempt
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return time.GetUtcNow() >= _retryAt;
+            }
+        }
+    }
+
+    public TimeSpan RetryIn
+    {
+        get
+        {
+            lock (_gate)
+            {
+                var wait = _retryAt - time.GetUtcNow();
+                return wait > TimeSpan.Zero ? wait : TimeSpan.Zero;
+            }
+        }
+    }
+
+    public CircuitState State
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return new CircuitState(
+                    _failures,
+                    _failures > 0 ? _retryAt : null,
+                    _lastSuccessAt,
+                    _lastError);
+            }
+        }
+    }
+
+    public void Succeeded()
+    {
+        int previous;
+        lock (_gate)
+        {
+            previous = _failures;
+            _failures = 0;
+            _retryAt = DateTimeOffset.MinValue;
+            _lastSuccessAt = time.GetUtcNow();
+            _lastError = null;
+        }
+
+        if (previous > 0)
+        {
+            logger.LogWarning("Database available again after {Failures} failed attempts", previous);
+        }
+    }
+
+    public void Failed(Exception exception)
+    {
+        int failures;
+        TimeSpan delay;
+        lock (_gate)
+        {
+            failures = ++_failures;
+            var factor = Math.Pow(2, Math.Min(failures - 1, 10));
+            delay = TimeSpan.FromTicks(Math.Min(MaxDelay.Ticks, (long)(MinDelay.Ticks * factor)));
+            _retryAt = time.GetUtcNow() + delay;
+            _lastError = exception.GetType().Name;
+        }
+
+        if (failures == 1)
+        {
+            logger.LogWarning(exception, "Database unavailable; serving from memory, retrying in {Delay}", delay);
+        }
+        else
+        {
+            logger.LogDebug(exception, "Database still unavailable after {Failures} attempts; retrying in {Delay}", failures, delay);
+        }
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/IBeaconStore.cs
+SIZE:     0.98 KB (1005 bytes)
+LINES:    25
+SHA256:   a3210904768f8b0a28d313e2184e121af5ab5213d3e725a614a18100bbdb9814
+MODIFIED: 2026-11-17 07:43:22 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public interface IBeaconStore
+{
+    bool IsConfigured { get; }
+
+    Task InsertAsync(IReadOnlyList<BeaconEntry> entries, CancellationToken cancellationToken);
+
+    Task<BeaconEntry?> GetAsync(Guid id, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<BeaconItem>> ListAsync(string? key, string? referer, Guid? before, int limit, CancellationToken cancellationToken);
+
+    Task<BeaconTotals> SummarizeAsync(string key, string? referer, DateTimeOffset hourlySince, CancellationToken cancellationToken);
+
+    Task<IReadOnlyList<KeyCount>> TopKeysAsync(int limit, CancellationToken cancellationToken);
+
+    Task<IReadOnlyDictionary<string, long>> CountAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken);
+}
+
+public interface IBeaconMaintenance
+{
+    Task<PruneResult> PruneAsync(DateTimeOffset olderThan, long budgetBytes, long targetBytes, CancellationToken cancellationToken);
+
+    Task VacuumAsync(CancellationToken cancellationToken);
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/NullBeaconStore.cs
+SIZE:     1.47 KB (1510 bytes)
+LINES:    29
+SHA256:   7e5c7a87e235eb09c3e3b2e8e8591db85ea1ded23116f1c7028b18da4e06be82
+MODIFIED: 2026-11-17 07:43:27 (UTC)
+================================================================================
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class NullBeaconStore : IBeaconStore, IBeaconMaintenance
+{
+    private static readonly IReadOnlyDictionary<string, long> NoCounts = new Dictionary<string, long>();
+
+    public bool IsConfigured => false;
+
+    public Task InsertAsync(IReadOnlyList<BeaconEntry> entries, CancellationToken cancellationToken) => Task.CompletedTask;
+
+    public Task<BeaconEntry?> GetAsync(Guid id, CancellationToken cancellationToken) => Task.FromResult<BeaconEntry?>(null);
+
+    public Task<IReadOnlyList<BeaconItem>> ListAsync(string? key, string? referer, Guid? before, int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<BeaconItem>>([]);
+
+    public Task<BeaconTotals> SummarizeAsync(string key, string? referer, DateTimeOffset hourlySince, CancellationToken cancellationToken) =>
+        Task.FromResult(BeaconTotals.Empty);
+
+    public Task<IReadOnlyList<KeyCount>> TopKeysAsync(int limit, CancellationToken cancellationToken) =>
+        Task.FromResult<IReadOnlyList<KeyCount>>([]);
+
+    public Task<IReadOnlyDictionary<string, long>> CountAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken) =>
+        Task.FromResult(NoCounts);
+
+    public Task<PruneResult> PruneAsync(DateTimeOffset olderThan, long budgetBytes, long targetBytes, CancellationToken cancellationToken) =>
+        Task.FromResult(new PruneResult(0, 0, 0));
+
+    public Task VacuumAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/PostgresBeaconStore.cs
+SIZE:     14.67 KB (15023 bytes)
+LINES:    397
+SHA256:   2c04b460cb0d905675478d15006487fb3042258db14b13aa749db85c3272781e
+MODIFIED: 2026-11-17 07:49:29 (UTC)
+================================================================================
+
+using System.Text.Json;
+using Dapper;
+using Npgsql;
+
+namespace Zen.Blazor.Beacons;
+
+public sealed class PostgresBeaconStore(NpgsqlDataSource dataSource, ILogger<PostgresBeaconStore> logger)
+    : IBeaconStore, IBeaconMaintenance
+{
+    private const long SchemaLockId = 7_243_019_001;
+
+    private const string SchemaSql = """
+        CREATE TABLE IF NOT EXISTS beacon (
+            id uuid PRIMARY KEY,
+            key text NOT NULL,
+            received_at timestamptz NOT NULL,
+            method text NOT NULL,
+            path text NOT NULL,
+            query text NOT NULL,
+            referer text NOT NULL,
+            content_type text,
+            client text,
+            user_agent text,
+            headers jsonb NOT NULL,
+            body text NOT NULL,
+            body_encoding text NOT NULL,
+            size_bytes integer NOT NULL
+        ) WITH (autovacuum_vacuum_scale_factor = 0.05, autovacuum_analyze_scale_factor = 0.05);
+        CREATE INDEX IF NOT EXISTS beacon_key_id ON beacon (key, id);
+        CREATE INDEX IF NOT EXISTS beacon_id_size ON beacon (id) INCLUDE (size_bytes);
+        """;
+
+    private const string InsertSql = """
+        INSERT INTO beacon (id, key, received_at, method, path, query, referer, content_type, client, user_agent, headers, body, body_encoding, size_bytes)
+        VALUES (@Id, @Key, @ReceivedAt, @Method, @Path, @Query, @Referer, @ContentType, @Client, @UserAgent, CAST(@Headers AS jsonb), @Body, @BodyEncoding, @Size)
+        ON CONFLICT (id) DO NOTHING
+        """;
+
+    private const string GetSql = """
+        SELECT id AS Id, key AS Key, received_at AS ReceivedAt, method AS Method, path AS Path, query AS Query,
+               referer AS Referer, content_type AS ContentType, client AS Client, user_agent AS UserAgent,
+               headers::text AS Headers, body AS Body, body_encoding AS BodyEncoding, size_bytes AS Size
+        FROM beacon
+        WHERE id = @id
+        """;
+
+    private const int PreviewLength = 160;
+
+    private readonly SemaphoreSlim _schemaGate = new(1, 1);
+    private volatile bool _schemaReady;
+
+    public bool IsConfigured => true;
+
+    public async Task InsertAsync(IReadOnlyList<BeaconEntry> entries, CancellationToken cancellationToken)
+    {
+        if (entries.Count == 0)
+        {
+            return;
+        }
+
+        var rows = entries.Select(e => new
+        {
+            e.Id,
+            e.Key,
+            e.ReceivedAt,
+            e.Method,
+            e.Path,
+            e.Query,
+            e.Referer,
+            e.ContentType,
+            e.Client,
+            e.UserAgent,
+            Headers = JsonSerializer.Serialize(e.Headers, BeaconJsonContext.Default.IReadOnlyDictionaryStringString),
+            e.Body,
+            e.BodyEncoding,
+            e.Size,
+        }).ToList();
+
+        await using var connection = await OpenAsync(cancellationToken);
+        try
+        {
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+            await connection.ExecuteAsync(new CommandDefinition(InsertSql, rows, transaction, cancellationToken: cancellationToken));
+            await transaction.CommitAsync(cancellationToken);
+            return;
+        }
+        catch (PostgresException ex) when (IsDataError(ex))
+        {
+            logger.LogWarning(ex, "Beacon batch rejected; retrying rows one at a time");
+        }
+
+        foreach (var row in rows)
+        {
+            try
+            {
+                await connection.ExecuteAsync(new CommandDefinition(InsertSql, row, cancellationToken: cancellationToken));
+            }
+            catch (PostgresException ex) when (IsDataError(ex))
+            {
+                logger.LogWarning(ex, "Discarded beacon {Id} rejected by the database", row.Id);
+            }
+        }
+    }
+
+    private static bool IsDataError(PostgresException ex) =>
+        ex.SqlState.StartsWith("22", StringComparison.Ordinal) || ex.SqlState.StartsWith("23", StringComparison.Ordinal);
+
+    public async Task<BeaconEntry?> GetAsync(Guid id, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        var row = await connection.QuerySingleOrDefaultAsync<EntryRow>(
+            new CommandDefinition(GetSql, new { id }, cancellationToken: cancellationToken));
+        return row?.ToEntry();
+    }
+
+    public async Task<IReadOnlyList<BeaconItem>> ListAsync(string? key, string? referer, Guid? before, int limit, CancellationToken cancellationToken)
+    {
+        var filters = new List<string>(3);
+        if (key is not null)
+        {
+            filters.Add("key = @key");
+        }
+
+        if (referer is not null)
+        {
+            filters.Add("referer = @referer");
+        }
+
+        if (before is not null)
+        {
+            filters.Add("id < @before");
+        }
+
+        var where = filters.Count == 0 ? "" : "WHERE " + string.Join(" AND ", filters);
+        var sql = $"""
+            SELECT id AS Id, key AS Key, received_at AS ReceivedAt, referer AS Referer, content_type AS ContentType,
+                   size_bytes AS Size, left(body, {PreviewLength}) AS Preview
+            FROM beacon
+            {where}
+            ORDER BY id DESC
+            LIMIT @limit
+            """;
+
+        await using var connection = await OpenAsync(cancellationToken);
+        var rows = await connection.QueryAsync<ItemRow>(
+            new CommandDefinition(sql, new { key, referer, before, limit }, cancellationToken: cancellationToken));
+        return [.. rows.Select(r => r.ToItem())];
+    }
+
+    public async Task<BeaconTotals> SummarizeAsync(string key, string? referer, DateTimeOffset hourlySince, CancellationToken cancellationToken)
+    {
+        var where = referer is null ? "WHERE key = @key" : "WHERE key = @key AND referer = @referer";
+        var sql = $"""
+            SELECT count(*) AS Total, coalesce(sum(size_bytes), 0)::bigint AS Bytes,
+                   min(received_at) AS FirstAt, max(received_at) AS LastAt
+            FROM beacon {where};
+
+            SELECT referer AS Referer, count(*) AS Count, max(received_at) AS LastAt
+            FROM beacon {where}
+            GROUP BY referer
+            ORDER BY count(*) DESC, referer
+            LIMIT {BeaconTotals.MaxReferers};
+
+            SELECT date_trunc('hour', received_at, 'UTC') AS Hour, count(*) AS Count
+            FROM beacon {where} AND received_at >= @since
+            GROUP BY 1
+            ORDER BY 1;
+            """;
+
+        await using var connection = await OpenAsync(cancellationToken);
+        using var grid = await connection.QueryMultipleAsync(
+            new CommandDefinition(sql, new { key, referer, since = hourlySince }, cancellationToken: cancellationToken));
+
+        var totals = await grid.ReadSingleAsync<TotalsRow>();
+        var referers = await grid.ReadAsync<RefererRow>();
+        var hourly = await grid.ReadAsync<HourRow>();
+
+        return new BeaconTotals(
+            totals.Total,
+            totals.Bytes,
+            Utc(totals.FirstAt),
+            Utc(totals.LastAt),
+            [.. referers.Select(r => new RefererCount(r.Referer, r.Count, Utc(r.LastAt)))],
+            [.. hourly.Select(h => new HourCount(Utc(h.Hour), h.Count))]);
+    }
+
+    public async Task<IReadOnlyList<KeyCount>> TopKeysAsync(int limit, CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT key AS Key, count(*) AS Count
+            FROM beacon
+            GROUP BY key
+            ORDER BY count(*) DESC, key
+            LIMIT @limit
+            """;
+
+        await using var connection = await OpenAsync(cancellationToken);
+        var rows = await connection.QueryAsync<KeyRow>(new CommandDefinition(sql, new { limit }, cancellationToken: cancellationToken));
+        return [.. rows.Select(r => new KeyCount(r.Key, r.Count))];
+    }
+
+    public async Task<IReadOnlyDictionary<string, long>> CountAsync(IReadOnlyCollection<string> keys, CancellationToken cancellationToken)
+    {
+        if (keys.Count == 0)
+        {
+            return new Dictionary<string, long>();
+        }
+
+        const string sql = """
+            SELECT key AS Key, count(*) AS Count
+            FROM beacon
+            WHERE key = ANY(@keys)
+            GROUP BY key
+            """;
+
+        await using var connection = await OpenAsync(cancellationToken);
+        var rows = await connection.QueryAsync<KeyRow>(
+            new CommandDefinition(sql, new { keys = keys.ToArray() }, cancellationToken: cancellationToken));
+        return rows.ToDictionary(r => r.Key, r => r.Count, StringComparer.Ordinal);
+    }
+
+    public async Task<PruneResult> PruneAsync(DateTimeOffset olderThan, long budgetBytes, long targetBytes, CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+
+        var removed = (long)await connection.ExecuteAsync(new CommandDefinition(
+            "DELETE FROM beacon WHERE id < @cutoff",
+            new { cutoff = BeaconIds.Floor(olderThan) },
+            cancellationToken: cancellationToken));
+
+        var stored = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
+            "SELECT coalesce(sum(size_bytes), 0)::bigint FROM beacon",
+            cancellationToken: cancellationToken));
+
+        if (stored > budgetBytes)
+        {
+            const string cutoffSql = """
+                SELECT id
+                FROM (SELECT id, sum(size_bytes) OVER (ORDER BY id DESC) AS running FROM beacon) ranked
+                WHERE running > @targetBytes
+                ORDER BY id DESC
+                LIMIT 1
+                """;
+
+            var cutoff = await connection.ExecuteScalarAsync<Guid?>(new CommandDefinition(
+                cutoffSql, new { targetBytes }, cancellationToken: cancellationToken));
+
+            if (cutoff is { } id)
+            {
+                var trimmed = await connection.ExecuteAsync(new CommandDefinition(
+                    "DELETE FROM beacon WHERE id <= @id", new { id }, cancellationToken: cancellationToken));
+                removed += trimmed;
+                logger.LogInformation("Trimmed {Count} beacons to stay under {Budget} bytes", trimmed, budgetBytes);
+
+                stored = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
+                    "SELECT coalesce(sum(size_bytes), 0)::bigint FROM beacon",
+                    cancellationToken: cancellationToken));
+            }
+        }
+
+        var databaseBytes = await connection.ExecuteScalarAsync<long>(new CommandDefinition(
+            "SELECT pg_database_size(current_database())",
+            cancellationToken: cancellationToken));
+
+        return new PruneResult(removed, stored, databaseBytes);
+    }
+
+    public async Task VacuumAsync(CancellationToken cancellationToken)
+    {
+        await using var connection = await OpenAsync(cancellationToken);
+        await connection.ExecuteAsync(new CommandDefinition(
+            "VACUUM (ANALYZE) beacon", commandTimeout: 300, cancellationToken: cancellationToken));
+    }
+
+    private async Task<NpgsqlConnection> OpenAsync(CancellationToken cancellationToken)
+    {
+        var connection = await dataSource.OpenConnectionAsync(cancellationToken);
+        if (_schemaReady)
+        {
+            return connection;
+        }
+
+        try
+        {
+            await EnsureSchemaAsync(connection, cancellationToken);
+            return connection;
+        }
+        catch
+        {
+            await connection.DisposeAsync();
+            throw;
+        }
+    }
+
+    private async Task EnsureSchemaAsync(NpgsqlConnection connection, CancellationToken cancellationToken)
+    {
+        await _schemaGate.WaitAsync(cancellationToken);
+        try
+        {
+            if (_schemaReady)
+            {
+                return;
+            }
+
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+            await connection.ExecuteAsync(new CommandDefinition(
+                "SELECT pg_advisory_xact_lock(@id)", new { id = SchemaLockId }, transaction, cancellationToken: cancellationToken));
+            await connection.ExecuteAsync(new CommandDefinition(SchemaSql, transaction: transaction, cancellationToken: cancellationToken));
+            await transaction.CommitAsync(cancellationToken);
+            _schemaReady = true;
+            logger.LogInformation("Beacon schema ready");
+        }
+        finally
+        {
+            _schemaGate.Release();
+        }
+    }
+
+    private static DateTimeOffset Utc(DateTime value) =>
+        new(DateTime.SpecifyKind(value, DateTimeKind.Utc), TimeSpan.Zero);
+
+    private static DateTimeOffset? Utc(DateTime? value) => value is { } v ? Utc(v) : null;
+
+    private sealed class EntryRow
+    {
+        public Guid Id { get; set; }
+        public string Key { get; set; } = "";
+        public DateTime ReceivedAt { get; set; }
+        public string Method { get; set; } = "";
+        public string Path { get; set; } = "";
+        public string Query { get; set; } = "";
+        public string Referer { get; set; } = "";
+        public string? ContentType { get; set; }
+        public string? Client { get; set; }
+        public string? UserAgent { get; set; }
+        public string Headers { get; set; } = "{}";
+        public string Body { get; set; } = "";
+        public string BodyEncoding { get; set; } = "";
+        public int Size { get; set; }
+
+        public BeaconEntry ToEntry() => new(
+            Id,
+            Key,
+            Utc(ReceivedAt),
+            Method,
+            Path,
+            Query,
+            Referer,
+            ContentType,
+            Client,
+            UserAgent,
+            JsonSerializer.Deserialize(Headers, BeaconJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>(),
+            Body,
+            BodyEncoding,
+            Size);
+    }
+
+    private sealed class ItemRow
+    {
+        public Guid Id { get; set; }
+        public string Key { get; set; } = "";
+        public DateTime ReceivedAt { get; set; }
+        public string Referer { get; set; } = "";
+        public string? ContentType { get; set; }
+        public int Size { get; set; }
+        public string Preview { get; set; } = "";
+
+        public BeaconItem ToItem() => new(Id, Key, Utc(ReceivedAt), Referer, ContentType, Size, Preview);
+    }
+
+    private sealed class TotalsRow
+    {
+        public long Total { get; set; }
+        public long Bytes { get; set; }
+        public DateTime? FirstAt { get; set; }
+        public DateTime? LastAt { get; set; }
+    }
+
+    private sealed class RefererRow
+    {
+        public string Referer { get; set; } = "";
+        public long Count { get; set; }
+        public DateTime LastAt { get; set; }
+    }
+
+    private sealed class HourRow
+    {
+        public DateTime Hour { get; set; }
+        public long Count { get; set; }
+    }
+
+    private sealed class KeyRow
+    {
+        public string Key { get; set; } = "";
+        public long Count { get; set; }
+    }
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Beacons/PostgresSettings.cs
+SIZE:     2.06 KB (2109 bytes)
+LINES:    63
+SHA256:   05cb1043fa2500598b2af82f16f0f79acbe7d4615bfac683ee3cf6be705d71aa
+MODIFIED: 2026-11-17 07:47:03 (UTC)
+================================================================================
+
+using Npgsql;
+
+namespace Zen.Blazor.Beacons;
+
+public static class PostgresSettings
+{
+    public const string Host = "postgreshost";
+    public const string Port = "postgresport";
+    public const string Database = "postgresdatabase";
+    public const string User = "postgresuser";
+    public const string Password = "postgrespassword";
+    public const string Url = "postgresconnectionstring";
+
+    public static string? ConnectionString(IConfiguration configuration, int maxPoolSize)
+    {
+        var builder = new NpgsqlConnectionStringBuilder();
+
+        if (!string.IsNullOrWhiteSpace(configuration[Host]))
+        {
+            builder.Host = configuration[Host];
+            if (int.TryParse(configuration[Port], out var port))
+            {
+                builder.Port = port;
+            }
+
+            builder.Database = configuration[Database];
+            builder.Username = configuration[User];
+            builder.Password = configuration[Password];
+        }
+        else if (Uri.TryCreate(configuration[Url], UriKind.Absolute, out var uri) && uri.Scheme is "postgres" or "postgresql")
+        {
+            builder.Host = uri.Host;
+            if (uri.Port > 0)
+            {
+                builder.Port = uri.Port;
+            }
+
+            builder.Database = Uri.UnescapeDataString(uri.AbsolutePath.TrimStart('/'));
+            var credentials = uri.UserInfo.Split(':', 2);
+            builder.Username = Uri.UnescapeDataString(credentials[0]);
+            if (credentials.Length > 1)
+            {
+                builder.Password = Uri.UnescapeDataString(credentials[1]);
+            }
+        }
+        else
+        {
+            return null;
+        }
+
+        builder.Pooling = true;
+        builder.MinPoolSize = 0;
+        builder.MaxPoolSize = maxPoolSize;
+        builder.ConnectionIdleLifetime = 60;
+        builder.ConnectionPruningInterval = 10;
+        builder.Timeout = 5;
+        builder.CommandTimeout = 15;
+        builder.KeepAlive = 30;
+        builder.SslMode = SslMode.Prefer;
+        builder.ApplicationName = "zen";
+        return builder.ConnectionString;
+    }
+}
 
 
 ================================================================================
@@ -650,10 +2867,10 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Layout/MainLayout.razor
-SIZE:     0.42 KB (427 bytes)
-LINES:    17
-SHA256:   8c2a423bf1da80231d4dab8e8767d85fd6edf7655a84576dfd45b21d169ecb04
-MODIFIED: 2026-10-05 09:30:05 (UTC)
+SIZE:     0.48 KB (490 bytes)
+LINES:    20
+SHA256:   3cf8de0c8574907544f1fb447b7225366cba1d00f5eb17e2d08385b06edf63b9
+MODIFIED: 2026-11-17 07:47:22 (UTC)
 ================================================================================
 
 @inherits LayoutComponentBase
@@ -661,7 +2878,10 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 <header>
     <a href="" class="brand">Zen</a>
     <ServerClock @rendermode="InteractiveServer" />
-    <a href="https://github.com/kusl/zen-velixir-run" target="_blank" rel="noopener">About</a>
+    <nav>
+        <a href="beacons">Beacons</a>
+        <a href="https://github.com/kusl/zen-velixir-run" target="_blank" rel="noopener">About</a>
+    </nav>
 </header>
 
 <main>
@@ -677,10 +2897,10 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/Layout/MainLayout.razor.css
-SIZE:     0.71 KB (725 bytes)
-LINES:    41
-SHA256:   3c48e4b18e412f8a343e0581f5dd376cb8c5a606eebaff6c9267f8e7c1ca0e64
-MODIFIED: 2026-10-05 09:30:05 (UTC)
+SIZE:     0.75 KB (768 bytes)
+LINES:    46
+SHA256:   f14839fdc88da88b30eff1b8cc061d95430ca5980794be360d5b90a8af661100
+MODIFIED: 2026-11-17 07:47:25 (UTC)
 ================================================================================
 
 header {
@@ -697,6 +2917,11 @@ header {
     font-weight: 600;
     color: var(--accent);
     text-decoration: none;
+}
+
+nav {
+    display: flex;
+    gap: 1rem;
 }
 
 main {
@@ -781,6 +3006,445 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 .zone {
     margin-inline-start: .35em;
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Components/Pages/BeaconBoard.razor
+SIZE:     8.21 KB (8411 bytes)
+LINES:    241
+SHA256:   a52fa7f315024509bedf665094b8eb97ef460c5113847e6d171f4c5492446750
+MODIFIED: 2026-11-17 07:48:14 (UTC)
+================================================================================
+
+@page "/beacons"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject BeaconService Service
+@inject BeaconBuffer Buffer
+@inject BeaconCapture Capture
+@inject NavigationManager Navigation
+
+<PageTitle>Beacons · Zen</PageTitle>
+
+<h1>Beacons</h1>
+<p class="lede">
+    POST anything to a key, get a UUIDv7 back, read it later. No sign-up, no auth.
+    Everything sent here is public, IPs are truncated, and the oldest data is deleted to fit a tiny database.
+</p>
+
+<section class="live">
+    <div class="tiles">
+        <div class="tile">
+            <span class="value">@Count(VisitKey)</span>
+            <span class="label">page visits</span>
+        </div>
+        @foreach (var reaction in Reactions)
+        {
+            <button type="button" class="tile react" @key="reaction.Key" title="@reaction.Name"
+                    disabled="@(!RendererInfo.IsInteractive)" @onclick="() => React(reaction)">
+                <span class="value">@reaction.Emoji @Count(reaction.Key)</span>
+                <span class="label">@reaction.Name</span>
+            </button>
+        }
+    </div>
+    <p class="status" role="status">
+        <span class="dot @StatusClass"></span>
+        @StatusText
+        @if (_message is not null)
+        {
+            <span class="note">@_message</span>
+        }
+    </p>
+</section>
+
+<section>
+    <h2>Recent</h2>
+    @if (_overview is null || _overview.Recent.Count == 0)
+    {
+        <p class="empty">Nothing yet.</p>
+    }
+    else
+    {
+        <ol class="feed">
+            @foreach (var item in _overview.Recent)
+            {
+                <li @key="item.Id">
+                    <div class="meta">
+                        <time datetime="@item.ReceivedAt.ToString("O")">@item.ReceivedAt.ToString("yyyy-MM-dd HH:mm:ss")</time>
+                        <a href="@($"api/beacons/{Uri.EscapeDataString(item.Key)}")" target="_blank">@item.Key</a>
+                        <span>@Bytes(item.Size)</span>
+                        <a href="@($"api/entries/{item.Id}")" target="_blank">json</a>
+                    </div>
+                    @if (item.Referer.Length > 0)
+                    {
+                        <div class="referer">@item.Referer</div>
+                    }
+                    @if (item.Preview.Length > 0)
+                    {
+                        <code>@item.Preview</code>
+                    }
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+<section>
+    <h2>Top keys</h2>
+    @if (_overview is null || _overview.TopKeys.Count == 0)
+    {
+        <p class="empty">No keys yet.</p>
+    }
+    else
+    {
+        <table>
+            <thead><tr><th>Key</th><th class="num">Beacons</th></tr></thead>
+            <tbody>
+                @foreach (var key in _overview.TopKeys)
+                {
+                    <tr @key="key.Key">
+                        <td><a href="@($"api/beacons/{Uri.EscapeDataString(key.Key)}")" target="_blank">@key.Key</a></td>
+                        <td class="num">@key.Count.ToString("N0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</section>
+
+<section>
+    <h2>API</h2>
+    <p>
+        Keys are 1–64 characters: letters, digits, <code>. _ ~ : -</code>, starting with a letter or digit.
+        Bodies up to @Bytes(Capture.MaxBodyBytes), any content type; non-UTF-8 bodies are stored as base64.
+        CORS is open. Writes are limited per IP. <code>Cookie</code>, <code>Authorization</code> and forwarding headers are redacted.
+    </p>
+    <table class="endpoints">
+        <thead><tr><th>Method</th><th>Path</th><th>Returns</th></tr></thead>
+        <tbody>
+            <tr><td>POST</td><td><code>/api/beacons/{key}</code></td><td>201, id and <code>Location</code></td></tr>
+            <tr><td>GET</td><td><code>/api/entries/{id}</code></td><td>Everything recorded, or 404</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons/{key}?referer=</code></td><td>Totals, by referer, hourly for 24 h</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons/{key}/entries?referer=&amp;before=&amp;limit=</code></td><td>Newest first, <code>next</code> cursor</td></tr>
+            <tr><td>GET</td><td><code>/api/beacons?limit=</code></td><td>Busiest keys</td></tr>
+            <tr><td>GET</td><td><code>/api/status</code></td><td>Storage health</td></tr>
+        </tbody>
+    </table>
+    <p>
+        Responses carry <code>degraded: true</code> when the database is unreachable and only recent in-memory data is used.
+        A lookup that misses memory during an outage returns 503 with <code>Retry-After</code>.
+    </p>
+
+    @foreach (var example in _examples)
+    {
+        <h3>@example.Title</h3>
+        <pre><code>@example.Code</code></pre>
+    }
+</section>
+
+@code {
+    private const string VisitKey = "zen-visits";
+    private static readonly TimeSpan Cooldown = TimeSpan.FromSeconds(1);
+
+    private static readonly Reaction[] Reactions =
+    [
+        new("zen-reaction-like", "👍", "like"),
+        new("zen-reaction-love", "❤️", "love"),
+        new("zen-reaction-party", "🎉", "party"),
+        new("zen-reaction-think", "🤔", "hmm"),
+    ];
+
+    private static readonly string[] CountKeys = [VisitKey, .. Reactions.Select(r => r.Key)];
+
+    private readonly CancellationTokenSource _cts = new();
+    private BeaconOverview? _overview;
+    private IReadOnlyList<BeaconExample> _examples = [];
+    private string? _message;
+    private DateTimeOffset _lastReaction;
+    private int _refreshQueued;
+
+    private string StatusClass => _overview?.Status.Database switch
+    {
+        "connected" => "ok",
+        "memory-only" or "connecting" => "warn",
+        _ => "bad",
+    };
+
+    private string StatusText
+    {
+        get
+        {
+            if (_overview is not { Status: var s })
+            {
+                return "Loading…";
+            }
+
+            var stored = s.StoredBytes is { } b ? $"{Bytes(b)} of {Bytes(s.BudgetBytes)} budget" : "size pending";
+            return s.Database switch
+            {
+                "connected" => $"Database connected · {stored} · {s.Unsaved} unsaved in memory",
+                "memory-only" => $"No database configured · {s.MemoryEntries} beacons in memory",
+                "connecting" => $"Connecting to database · {s.Unsaved} unsaved in memory",
+                _ => $"Database unavailable · serving {s.MemoryEntries} beacons from memory, {s.Unsaved} waiting to save",
+            };
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _examples = BeaconExample.For(Navigation.BaseUri.TrimEnd('/'));
+
+        if (RendererInfo.IsInteractive)
+        {
+            Service.Accept(Capture.FromPage(VisitKey, Navigation.Uri, "visit"));
+            Buffer.Changed += OnBufferChanged;
+        }
+
+        _overview = await Service.GetOverviewAsync(CountKeys, RendererInfo.IsInteractive, _cts.Token);
+    }
+
+    private long Count(string key) => _overview?.Counts.GetValueOrDefault(key) ?? 0;
+
+    private async Task React(Reaction reaction)
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastReaction < Cooldown)
+        {
+            _message = "Easy, one per second.";
+            return;
+        }
+
+        _lastReaction = now;
+        _message = null;
+        Service.Accept(Capture.FromPage(reaction.Key, Navigation.Uri, reaction.Name));
+        _overview = await Service.GetOverviewAsync(CountKeys, true, _cts.Token);
+    }
+
+    private void OnBufferChanged()
+    {
+        if (Interlocked.Exchange(ref _refreshQueued, 1) == 1)
+        {
+            return;
+        }
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), _cts.Token);
+                Volatile.Write(ref _refreshQueued, 0);
+                _overview = await Service.GetOverviewAsync(CountKeys, false, _cts.Token);
+                StateHasChanged();
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+    }
+
+    private static string Bytes(long value) => value switch
+    {
+        < 1024 => $"{value} B",
+        < 1024 * 1024 => $"{value / 1024.0:0.#} KB",
+        _ => $"{value / (1024.0 * 1024):0.#} MB",
+    };
+
+    public void Dispose()
+    {
+        Buffer.Changed -= OnBufferChanged;
+        _cts.Cancel();
+    }
+
+    private sealed record Reaction(string Key, string Emoji, string Name);
+}
+
+
+================================================================================
+FILE:     Zen.Blazor/Components/Pages/BeaconBoard.razor.css
+SIZE:     2.50 KB (2565 bytes)
+LINES:    178
+SHA256:   054a3c828e9197acf69bcc1b1e43e51b2b5aad2a30e8bff49d2b0101d3c14fb7
+MODIFIED: 2026-11-17 07:48:26 (UTC)
+================================================================================
+
+h1 {
+    margin: .5rem 0 .5rem;
+    font-size: 1.5rem;
+    line-height: 1.2;
+}
+
+h2 {
+    margin: 2rem 0 .75rem;
+    font-size: 1.15rem;
+}
+
+h3 {
+    margin: 1.25rem 0 .4rem;
+    font-size: .95rem;
+}
+
+.lede {
+    margin: 0 0 1.25rem;
+    color: var(--muted);
+}
+
+.tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: .5rem;
+}
+
+.tile {
+    display: grid;
+    gap: .15rem;
+    padding: .75rem;
+    border: 1px solid var(--line);
+    border-radius: .5rem;
+    background: var(--surface);
+    text-align: center;
+}
+
+.react {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.react:hover:not(:disabled) {
+    border-color: var(--accent);
+}
+
+.react:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.react:disabled {
+    cursor: default;
+}
+
+.value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.label {
+    color: var(--muted);
+    font-size: .8rem;
+}
+
+.status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    margin: .75rem 0 0;
+    color: var(--muted);
+    font-size: .85rem;
+}
+
+.dot {
+    width: .6rem;
+    height: .6rem;
+    border-radius: 50%;
+    background: var(--muted);
+}
+
+.dot.ok {
+    background: #2e9d5b;
+}
+
+.dot.warn {
+    background: #d9a400;
+}
+
+.dot.bad {
+    background: var(--danger);
+}
+
+.note {
+    color: var(--fg);
+}
+
+.empty {
+    color: var(--muted);
+}
+
+.feed {
+    display: grid;
+    gap: .5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.feed li {
+    display: grid;
+    gap: .2rem;
+    min-width: 0;
+    padding: .5rem .75rem;
+    border-left: 3px solid var(--accent);
+    border-radius: .25rem;
+    background: var(--surface);
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem .75rem;
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.meta time,
+.meta span,
+.referer {
+    color: var(--muted);
+}
+
+.referer {
+    font-size: .8rem;
+    overflow-wrap: anywhere;
+}
+
+.feed code {
+    font-size: .8rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+}
+
+th,
+td {
+    padding: .35rem .5rem;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: top;
+}
+
+td code {
+    overflow-wrap: anywhere;
+}
+
+.num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+pre {
+    margin: 0;
+    padding: .75rem;
+    border-radius: .5rem;
+    background: var(--surface);
+    overflow-x: auto;
+    font-size: .8rem;
 }
 
 
@@ -1054,13 +3718,13 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Components/_Imports.razor
-SIZE:     0.43 KB (445 bytes)
-LINES:    12
-SHA256:   15f4cc9a4e6a01947d808c89fde67a1abffb9c0953e7ed74a9b4e1d66229f030
-MODIFIED: 2026-10-05 09:30:05 (UTC)
+SIZE:     0.46 KB (468 bytes)
+LINES:    13
+SHA256:   76e627b8640d60a3ff74ff6fdedc275f9808ab098e71ec03b11ddd0dc20fb75f
+MODIFIED: 2026-11-17 07:47:27 (UTC)
 ================================================================================
 
-﻿@using System.Net.Http
+@using System.Net.Http
 @using System.Net.Http.Json
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Routing
@@ -1069,6 +3733,7 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 @using Microsoft.AspNetCore.Components.Web.Virtualization
 @using Microsoft.JSInterop
 @using Zen.Blazor
+@using Zen.Blazor.Beacons
 @using Zen.Blazor.Components
 @using Zen.Blazor.Components.Layout
 @using Zen.Blazor.Services
@@ -1076,14 +3741,15 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/Program.cs
-SIZE:     1.44 KB (1471 bytes)
-LINES:    51
-SHA256:   4535c18c6358327431205aa65668b4489c323802df6aff99319cb65c50b0caa7
-MODIFIED: 2026-10-05 09:30:20 (UTC)
+SIZE:     1.56 KB (1593 bytes)
+LINES:    55
+SHA256:   31d28c07c63d08d2f61bf188f18ea18d3cef2895ea24cff6b976dceefae6fda8
+MODIFIED: 2026-11-17 07:47:10 (UTC)
 ================================================================================
 
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
+using Zen.Blazor.Beacons;
 using Zen.Blazor.Components;
 using Zen.Blazor.Services;
 
@@ -1106,6 +3772,7 @@ builder.Services.AddDataProtection().UseEphemeralDataProtectionProvider();
 builder.Services.AddSingleton<MessageBoard>();
 builder.Services.AddSingleton<ClockService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<ClockService>());
+builder.Services.AddBeacons(builder.Configuration);
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents(o =>
@@ -1126,9 +3793,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseBeacons();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapBeaconEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
@@ -1319,10 +3988,10 @@ public sealed partial class MessageBoard(ILogger<MessageBoard> logger)
 
 ================================================================================
 FILE:     Zen.Blazor/Zen.Blazor.csproj
-SIZE:     0.68 KB (698 bytes)
-LINES:    19
-SHA256:   b58940280332b6a5557d4c331b9db5cc90fbc1b9271be09d0ff5dcce31ba7a11
-MODIFIED: 2026-11-17 07:01:52 (UTC)
+SIZE:     0.83 KB (846 bytes)
+LINES:    24
+SHA256:   a08b17ee4b4015cbc9f05a712ad43fa1bcf89416b382487a7071952295656304
+MODIFIED: 2026-11-17 07:47:16 (UTC)
 ================================================================================
 
 <Project Sdk="Microsoft.NET.Sdk.Web">
@@ -1341,6 +4010,11 @@ MODIFIED: 2026-11-17 07:01:52 (UTC)
 
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Dapper" Version="2.1.89" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
   </ItemGroup>
 
 </Project>
@@ -1366,10 +4040,10 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 ================================================================================
 FILE:     Zen.Blazor/appsettings.json
-SIZE:     0.19 KB (198 bytes)
-LINES:    10
-SHA256:   df8acc132a075a6b6a6796929fb2d6c441c87f88f76794de364cc2206dec9334
-MODIFIED: 2026-10-05 09:30:20 (UTC)
+SIZE:     0.59 KB (600 bytes)
+LINES:    25
+SHA256:   d844cc4a0b55ffb552afcde99de20dcaa4cd2a06487ffd1aaa373f364c7eb04c
+MODIFIED: 2026-11-17 07:47:18 (UTC)
 ================================================================================
 
 {
@@ -1377,10 +4051,25 @@ MODIFIED: 2026-10-05 09:30:20 (UTC)
     "LogLevel": {
       "Default": "Warning",
       "Microsoft.Hosting.Lifetime": "Information",
-      "Microsoft.AspNetCore.Antiforgery": "None"
+      "Microsoft.AspNetCore.Antiforgery": "None",
+      "Zen.Blazor.Beacons": "Information"
     }
   },
-  "AllowedHosts": "*"
+  "AllowedHosts": "*",
+  "Beacons": {
+    "MaxBodyBytes": 32768,
+    "MemoryBytes": 4194304,
+    "MemoryEntries": 2000,
+    "StorageBudgetBytes": 50331648,
+    "DatabaseLimitBytes": 167772160,
+    "RetentionDays": 30,
+    "PruneInterval": "00:02:00",
+    "WriteBatchSize": 50,
+    "MaxPoolSize": 2,
+    "WritesPerMinute": 30,
+    "ReadsPerMinute": 120,
+    "CspKey": "zen-csp"
+  }
 }
 
 
@@ -1707,9 +4396,9 @@ MODIFIED: 2026-10-05 09:30:05 (UTC)
 
 
 ===============================================================================
-EXPORT COMPLETED (UTC): 2026-11-17 07:02:08
-Total Files Exported:   25
-Total Source Size:      0.03 MB (32965 bytes)
+EXPORT COMPLETED (UTC): 2026-11-17 08:16:28
+Total Files Exported:   45
+Total Source Size:      0.11 MB (115165 bytes)
 Output File:            /home/kushal/src/dotnet/zen-velixir-run/docs/llm/dump.txt
 ===============================================================================
-DUMP SHA256 (of all lines above this one): d16a6905c00b8bfb101e5944680d38cca3db6e7d2462e4b718244d98f8ebe837
+DUMP SHA256 (of all lines above this one): 1e38a9944e11186af2e75b0f58f8b8400a7117a4c8bf23abc27939bacb94ac54
