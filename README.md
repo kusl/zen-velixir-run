@@ -32,6 +32,7 @@ Minimal .NET 10 Blazor Server app on the [velixir](https://zen.velixir.run/) fre
 - Janitor every 2 min: deletes entries older than 30 days, trims oldest to 80% when stored bytes exceed 48 MiB, halves the budget and vacuums if `pg_database_size` exceeds 160 MiB and is still growing.
 - Pool max 2 connections (server allows 5). Schema is created on first use.
 - No PostgreSQL settings: memory only.
+- velixir blocks outbound ports other than 80/443 unless opened by support ticket; an external database on 5432 needs that. Pods have no IPv6 route. `/api/status` `lastError` shows the socket error.
 
 Settings in `appsettings.json` under `Beacons`. Connection from env vars `postgreshost`, `postgresport`, `postgresdatabase`, `postgresuser`, `postgrespassword`, or `postgresconnectionstring` (`postgresql://user:pass@host:port/db`) as fallback.
 

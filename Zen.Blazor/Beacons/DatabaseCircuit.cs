@@ -1,3 +1,5 @@
+using System.Net.Sockets;
+
 namespace Zen.Blazor.Beacons;
 
 public readonly record struct CircuitState(int Failures, DateTimeOffset? RetryAt, DateTimeOffset? LastSuccessAt, string? LastError);
@@ -71,24 +73,51 @@ public sealed class DatabaseCircuit(TimeProvider time, ILogger<DatabaseCircuit> 
 
     public void Failed(Exception exception)
     {
+        var reason = Describe(exception);
         int failures;
         TimeSpan delay;
+        bool changed;
         lock (_gate)
         {
             failures = ++_failures;
             var factor = Math.Pow(2, Math.Min(failures - 1, 10));
             delay = TimeSpan.FromTicks(Math.Min(MaxDelay.Ticks, (long)(MinDelay.Ticks * factor)));
             _retryAt = time.GetUtcNow() + delay;
-            _lastError = exception.GetType().Name;
+            changed = _lastError != reason;
+            _lastError = reason;
         }
 
-        if (failures == 1)
+        if (failures == 1 || changed)
         {
-            logger.LogWarning(exception, "Database unavailable; serving from memory, retrying in {Delay}", delay);
+            logger.LogWarning(
+                "Database unavailable ({Reason}: {Message}); serving from memory, retrying in {Delay}",
+                reason, Innermost(exception).Message, delay);
         }
-        else
+
+        logger.LogDebug(exception, "Database attempt {Failures} failed", failures);
+    }
+
+    private static string Describe(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
         {
-            logger.LogDebug(exception, "Database still unavailable after {Failures} attempts; retrying in {Delay}", failures, delay);
+            if (current is SocketException socket)
+            {
+                return $"{nameof(SocketException)}:{socket.SocketErrorCode}";
+            }
         }
+
+        return Innermost(exception).GetType().Name;
+    }
+
+    private static Exception Innermost(Exception exception)
+    {
+        var current = exception;
+        while (current.InnerException is not null)
+        {
+            current = current.InnerException;
+        }
+
+        return current;
     }
 }
